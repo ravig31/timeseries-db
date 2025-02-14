@@ -10,13 +10,17 @@ void Chunk::insert(const DataPoint& point)
 	end_ts = point.ts;
 }
 
-std::vector<DataPoint> Chunk::query(const DataPoint::Timestamp start_ts, const DataPoint::Timestamp end_ts)
+std::vector<DataPoint> const Chunk::query(
+	const DataPoint::Timestamp start_ts,
+	const DataPoint::Timestamp end_ts
+)
 {
-    std::vector<DataPoint> results;
-    for (const auto& point : data) {
-        if (point.ts >= start_ts && point.ts <= end_ts)
-            results.push_back(point);
-    }
+	std::vector<DataPoint> results;
+	for (const auto& point : data)
+	{
+		if (point.ts >= start_ts && point.ts <= end_ts)
+			results.push_back(point);
+	}
 
-    return results;
+	return results;
 }

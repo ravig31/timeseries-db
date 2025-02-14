@@ -13,7 +13,13 @@ class Chunk
 
 	void insert(const DataPoint& point);
 
-	std::vector<DataPoint> query(const DataPoint::Timestamp start, const DataPoint::Timestamp end);
+	std::vector<DataPoint> const query(
+		const DataPoint::Timestamp start,
+		const DataPoint::Timestamp end
+	);
+	std::vector<DataPoint> const get_data(){ return data; }
+	DataPoint::Timestamp get_start_ts(){ return start_ts; }
+	DataPoint::Timestamp get_end_ts(){ return end_ts; }
 
   private:
 	std::vector<DataPoint> data;

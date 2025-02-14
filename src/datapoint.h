@@ -2,11 +2,10 @@
 
 #include <chrono>
 
-class DataPoint
+struct DataPoint
 {
-  public:
 	using Timestamp = std::chrono::system_clock::time_point;
 
 	Timestamp ts;
-    double value;
+	double value;
 };

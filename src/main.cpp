@@ -1,18 +1,23 @@
+#include <chrono>
 #include <cstddef>
-#include <unordered_map>
+#include <iostream>
 
 #include "datapoint.h"
-#include "table.h"
+#include "db.h"
 
-
-class DataBase
+int main()
 {
-  public:
-	void create_table(const std::string& name, const Table::Schema);
-	void insert(const std::string& table_name, const DataPoint& data);
-	std::vector<DataPoint> query(); // when to return vector by reference?
-  private:
-	std::unordered_map<std::string, std::unique_ptr<Table>> tables;
-};
+	DataBase db{};
+	db.create_table("stock-prices");
 
-int main() { return 0; }
+	auto now = std::chrono::system_clock::now();
+	db.insert("stock-prices", DataPoint{ now, 10.2 });
+
+	db.create_table("sensor_readings");
+	auto later = now + std::chrono::seconds(60);
+	db.insert("sensor_readings", DataPoint{ later, 24.0 });
+
+	std::cout << db << '\n';
+
+	return 0;
+}

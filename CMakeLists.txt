@@ -20,6 +20,7 @@ add_executable(${PROJECT_NAME}
 
 target_compile_options(${PROJECT_NAME}
     PRIVATE
+        -g
         -Wall
         -Wextra
         -Wpedantic

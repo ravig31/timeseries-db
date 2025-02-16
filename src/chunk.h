@@ -1,29 +1,41 @@
 #pragma once
 
 #include "datapoint.h"
+#include <cstdint>
+#include <sys/types.h>
 #include <vector>
 
 class Chunk
 {
   public:
 	Chunk(DataPoint::Timestamp start)
-		: start_ts(start) {};
-
-	bool is_full() const { return data.size() >= max_chunk_size; }
-
+		: m_base_ts(start)
+	{
+		m_ts_deltas.reserve(MAX_CHUNK_SIZE);
+		m_encoded_values.reserve(MAX_CHUNK_SIZE);
+	};
+	std::vector<int64_t> const get_data() { return m_encoded_values; }
+	DataPoint::Timestamp get_base_ts() { return m_base_ts; }
+	size_t size() { return m_ts_deltas.size(); }
+	bool is_full() const { return m_ts_deltas.size() >= MAX_CHUNK_SIZE; }
 	void insert(const DataPoint& point);
 
 	std::vector<DataPoint> const query(
 		const DataPoint::Timestamp start,
 		const DataPoint::Timestamp end
 	);
-	std::vector<DataPoint> const get_data(){ return data; }
-	DataPoint::Timestamp get_start_ts(){ return start_ts; }
-	DataPoint::Timestamp get_end_ts(){ return end_ts; }
+
+	void persist(const std::string& path) const;
 
   private:
-	std::vector<DataPoint> data;
-	DataPoint::Timestamp start_ts;
-	DataPoint::Timestamp end_ts;
-	size_t max_chunk_size{ 1000 };
+	static constexpr size_t MAX_CHUNK_SIZE{ 1000 };
+	std::vector<int64_t> m_ts_deltas;
+	std::vector<int64_t> m_encoded_values;
+	DataPoint::Timestamp m_base_ts;
+
+	struct ChunkHeader
+	{
+		DataPoint::Timestamp start_ts;
+		uint32_t count;
+	};
 };

@@ -4,15 +4,16 @@
 
 void Table::create_chunk(DataPoint::Timestamp start_ts)
 {
-	chunks.push_back(std::make_unique<Chunk>(start_ts));
+	m_chunks.push_back(std::make_unique<Chunk>(start_ts));
 }
 
 void Table::insert(const DataPoint& point)
 {
-	if (chunks.empty() || chunks.back()->is_full())
+	if (m_chunks.empty() || m_chunks.back()->is_full())
 		create_chunk(point.ts);
 
-	chunks.back()->insert(point);
+	m_chunks.back()->insert(point);
+	m_chunk_index[point.ts] = m_chunks.size();
 }
 
 
@@ -23,6 +24,7 @@ std::vector<DataPoint> const Table::query(
 )
 {
 	std::vector<DataPoint> results {};
+	
 	return results;
 }
 

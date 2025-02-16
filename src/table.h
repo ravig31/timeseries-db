@@ -1,4 +1,6 @@
 #pragma once
+#include <cstddef>
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -9,10 +11,24 @@
 class Table
 {
   public:
+	std::vector<std::unique_ptr<Chunk>> m_chunks;
 	struct Schema
 	{
 		std::vector<std::string> fields;
 	};
+	std::vector<std::unique_ptr<Chunk>>& get_chunks() { return m_chunks; }
+	size_t size() const
+	{
+		size_t totalSize = 0;
+		for (const auto& chunk : m_chunks)
+		{
+			if (chunk)
+			{
+				totalSize += chunk->size();
+			}
+		}
+		return totalSize;
+	}
 
 	void insert(const DataPoint& data);
 	void create_chunk(DataPoint::Timestamp start_ts);
@@ -22,8 +38,6 @@ class Table
 		DataPoint::Timestamp end_ts
 	);
 
-	std::vector<std::unique_ptr<Chunk>>& get_chunks(){ return chunks; }
-
 	Table(const std::string& name)
 		: m_name(name)
 	{
@@ -31,5 +45,5 @@ class Table
 
   private:
 	std::string m_name;
-	std::vector<std::unique_ptr<Chunk>> chunks;
+	std::map<DataPoint::Timestamp, size_t> m_chunk_index;
 };

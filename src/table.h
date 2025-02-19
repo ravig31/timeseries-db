@@ -7,43 +7,25 @@
 
 #include "chunk.h"
 #include "datapoint.h"
+#include "utils.h"
 
 class Table
 {
   public:
-	std::vector<std::unique_ptr<Chunk>> m_chunks;
-	struct Schema
-	{
-		std::vector<std::string> fields;
-	};
-	std::vector<std::unique_ptr<Chunk>>& get_chunks() { return m_chunks; }
-	size_t size() const
-	{
-		size_t totalSize = 0;
-		for (const auto& chunk : m_chunks)
-		{
-			if (chunk)
-			{
-				totalSize += chunk->size();
-			}
-		}
-		return totalSize;
-	}
 
+	size_t size(){ return m_row_count; }
 	void insert(const DataPoint& data);
-	void create_chunk(DataPoint::Timestamp start_ts);
-	std::vector<DataPoint> const query(
-		const std::string& table_name,
-		DataPoint::Timestamp start_ts,
-		DataPoint::Timestamp end_ts
-	);
+	std::vector<DataPoint> const query(Timestamp start_ts, Timestamp end_ts);
 
 	Table(const std::string& name)
-		: m_name(name)
+		: m_name(name), m_row_count(0)
 	{
 	}
 
   private:
 	std::string m_name;
-	std::map<DataPoint::Timestamp, size_t> m_chunk_index;
+	std::vector<std::unique_ptr<Chunk>> m_chunks;
+	std::map<int64_t, size_t> m_chunk_index;
+	size_t m_row_count;
+	ChunkManager m_chunk_manager;
 };

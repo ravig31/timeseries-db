@@ -1,22 +1,17 @@
 #pragma once
 
 #include <cstdint>
+#include <string>
 
 struct DataPoint
 {
-	using Timestamp = int64_t;
 
-	Timestamp ts;
+	int64_t ts;
 	double value;
+  std::string table_id;
 
-	int64_t encode_time_delta(Timestamp prev) const 
+	int64_t encode_time_delta(int64_t prev) const 
   {
     return ts - prev;
-  }
-
-  int64_t encode_value() const
-  {
-    // make value fixed point with 4 decimals 
-    return static_cast<int64_t>(value*1000);
   }
 };

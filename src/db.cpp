@@ -21,16 +21,13 @@ void DataBase::insert(const std::string& table_name, const DataPoint& point)
 	}
 }
 
-void DataBase::flush_table(const std::string& table_name) 
+
+std::vector<DataPoint> const DataBase::query(
+	const std::string& table_name,
+	int64_t start_ts,
+	int64_t end_ts
+)
 {
-    auto& table = m_tables[table_name];
-    std::string table_path =  m_dbpath + '/' + table_name;
-    std::filesystem::create_directories(table_path);
-    
-    // Write each block to disk
-    for (size_t i = 0; i < table->m_chunks.size(); ++i) {
-        table->m_chunks[i]->persist(
-            table_path + "/block_" + std::to_string(i)
-        );
-    }
+	auto& table = m_tables[table_name];
+	return table->query(start_ts, end_ts);
 }

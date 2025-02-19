@@ -23,11 +23,16 @@ class DataBase
 		int64_t start_ts,
 		int64_t end_ts
 	);
-
+	
 	Table* get_table(const std::string& table_name) { return m_tables[table_name].get(); }
-
-  private:
+	
+	private:
 	std::string m_name;
 	std::string m_dbpath;
 	std::unordered_map<std::string, std::unique_ptr<Table>> m_tables;
+	
+	std::string create_table_path(const std::string& table_name)
+	{
+		return m_dbpath + '/' + table_name;
+	}
 };

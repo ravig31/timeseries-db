@@ -2,25 +2,37 @@
 #include "utils.h"
 #include <cstddef>
 #include <memory>
-#include <random>
 #include <vector>
 
-
+// void ChunkManager::initialize()
+// {
+// 	// Move initialization code here
+// 	TimeRange initial_range = {
+// 		std::chrono::system_clock::to_time_t(std::chrono::system_clock::time_point::min()),
+// 		std::chrono::system_clock::to_time_t(std::chrono::system_clock::time_point::max())
+// 	};
+// 	auto initial_chunk = std::make_unique<Chunk>(initial_range);
+// 	auto initial_chunk_file = std::make_unique<ChunkFile>(m_data_path, initial_chunk->id());
+// 	initial_chunk_file->save(*initial_chunk);
+// 	insert_non_full(m_root.get(), initial_range, std::move(initial_chunk_file));
+// }
 
 std::unique_ptr<Chunk> ChunkManager::get_chunk(Timestamp ts)
 {
 	// TODO: Implement cache with invalidation
 	// (e.g., using a map or unordered_map with timestamps as keys)
 
-	ChunkFile* chunk_file = find_chunk_file(ts, std::move(m_root));
+	auto chunk_file = find_chunk_file(ts, m_root);
 	if (!chunk_file)
 	{
+
 		return nullptr;
 	}
 
 	std::unique_ptr<Chunk> chunk = chunk_file->load();
 	if (!chunk)
 	{
+		return nullptr;
 		// Handle load error (e.g., return nullptr or throw an exception)
 	}
 
@@ -29,15 +41,15 @@ std::unique_ptr<Chunk> ChunkManager::get_chunk(Timestamp ts)
 	return chunk;
 }
 
-ChunkFile* ChunkManager::find_chunk_file(Timestamp ts, std::unique_ptr<ChunkTreeNode> node)
+ChunkFile* ChunkManager::find_chunk_file(Timestamp ts, std::unique_ptr<ChunkTreeNode>& node)
 {
-	if (node->is_leaf)
+	if (node->is_leaf())
 	{
-		// Consider using binary search here
 		for (size_t i = 0; i < node->keys.size(); ++i)
 		{
 			if (node->keys[i].contains(ts))
 			{
+				// Return the shared_ptr to the ChunkFile
 				return std::get<std::unique_ptr<ChunkFile>>(node->children[i]).get();
 			}
 		}
@@ -51,7 +63,7 @@ ChunkFile* ChunkManager::find_chunk_file(Timestamp ts, std::unique_ptr<ChunkTree
 			{
 				return find_chunk_file(
 					ts,
-					std::move(std::get<std::unique_ptr<ChunkTreeNode>>(node->children[i]))
+					std::get<std::unique_ptr<ChunkTreeNode>>(node->children[i])
 				);
 			}
 		}
@@ -62,7 +74,7 @@ ChunkFile* ChunkManager::find_chunk_file(Timestamp ts, std::unique_ptr<ChunkTree
 void ChunkManager::insert_chunk(std::unique_ptr<Chunk> chunk)
 {
 
-	if (m_root->keys.size() == MAX_NODE_SIZE)
+	if (m_root->key_count == MAX_NODE_SIZE)
 	{
 		auto new_root = std::make_unique<ChunkTreeNode>(false);
 		new_root->children.push_back(std::move(m_root));
@@ -76,26 +88,26 @@ void ChunkManager::insert_chunk(std::unique_ptr<Chunk> chunk)
 	insert_non_full(m_root.get(), chunk->get_range(), std::move(chunk_file));
 }
 
-std::unique_ptr<Chunk> ChunkManager::create_chunk(Timestamp timestamp)
+std::unique_ptr<Chunk> ChunkManager::create_chunk(Timestamp timestamp, ChunkId id = 0)
 {
 	Timestamp start_key = get_chunk_key(timestamp);
 	TimeRange range{ start_key, start_key + (60 * 60) };
-	auto chunk = std::make_unique<Chunk>(generate_chunk_id(), range);
+	auto chunk = std::make_unique<Chunk>(range, id);
 	return chunk;
 }
 
-ChunkId ChunkManager::generate_chunk_id()
-{
-	static std::random_device rd;
-	static std::mt19937_64 generator(rd());
-	static std::uniform_int_distribution<ChunkId> distribution;
-	return distribution(generator);
-}
+// ChunkId ChunkManager::generate_chunk_id()
+// {
+// 	static std::random_device rd;
+// 	static std::mt19937_64 generator(rd());
+// 	static std::uniform_int_distribution<ChunkId> distribution;
+// 	return distribution(generator);
+// }
 
 void ChunkManager::split(ChunkTreeNode* parent, size_t index)
 {
 	auto child = std::get<std::unique_ptr<ChunkTreeNode>>(parent->children[index]).get();
-	auto new_node = std::make_unique<ChunkTreeNode>(child->is_leaf);
+	auto new_node = std::make_unique<ChunkTreeNode>(child->is_leaf());
 
 	size_t mid_index = (MAX_NODE_SIZE - 1) / 2;
 	new_node->keys.insert(
@@ -124,9 +136,9 @@ void ChunkManager::insert_non_full(
 	std::unique_ptr<ChunkFile> chunk_file
 )
 {
-	size_t i{ node->keys.size() - 1 };
-
-	if (node->is_leaf)
+	// TODO: Fix indexing here
+	int i = node->keys.size() - 2;
+	if (node->is_leaf())
 	{
 		while (i >= 0 && range.start_ts < node->keys[i].start_ts)
 		{
@@ -136,6 +148,7 @@ void ChunkManager::insert_non_full(
 		}
 		node->keys[i + 1] = range;
 		node->children[i + 1] = std::move(chunk_file);
+		node->key_count++;
 	}
 	else
 	{
@@ -145,7 +158,7 @@ void ChunkManager::insert_non_full(
 		}
 		++i; // incremenet one for position of right child
 		auto child = std::get<std::unique_ptr<ChunkTreeNode>>(node->children[i]).get();
-		if (child->keys.size() == MAX_NODE_SIZE)
+		if (child->key_count == MAX_NODE_SIZE)
 		{
 			split(node, i);
 			if (range.start_ts > node->keys[i].start_ts)

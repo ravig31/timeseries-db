@@ -14,7 +14,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 add_executable(${PROJECT_NAME}
     src/main.cpp
     src/table.cpp
-    src/chunk.cpp
+    src/chunk_manager.cpp
+    src/chunk_file.cpp
+    src/chunk_object.cpp
     src/db.cpp
 )
 

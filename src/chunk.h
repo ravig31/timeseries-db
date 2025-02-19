@@ -15,7 +15,7 @@
 class Chunk
 {
   public:
-	Chunk(int64_t id, TimeRange& timerange)
+	Chunk(TimeRange& timerange, ChunkId id = 0)
 		: m_id(id)
 		, m_row_count(0)
 		, m_is_to_save(false)
@@ -25,14 +25,12 @@ class Chunk
 		m_values.reserve(MAX_CHUNK_SIZE);
 	};
 
-	void insert(const DataPoint& point);
-	std::vector<DataPoint> const query();
-
-	std::vector<double> const get_data() { return m_values; }
+	void append(const DataPoint& point);
+	std::vector<DataPoint> query() const;
 	TimeRange get_range() const { return m_timerange; }
 	int64_t id() const { return m_id; }
 	bool is_to_save() const { return m_is_to_save; }
-	size_t size() { return m_row_count; }
+	size_t size() const { return m_row_count; }
 	bool is_full() const { return m_ts_deltas.size() >= MAX_CHUNK_SIZE; }
 
   private:
@@ -57,7 +55,7 @@ class ChunkFile
 	{
 	}
 	void save(const Chunk& chunk) const;
-	std::unique_ptr<Chunk> load();
+	std::unique_ptr<Chunk> load() const;
 
   private:
 	struct ChunkHeader
@@ -72,43 +70,60 @@ class ChunkFile
 	{
 		return base_dir + "/chunk_" + std::to_string(chunk_id) + ".bin";
 	}
-	void write_header(std::ofstream& file, const Chunk& chunk) const ;
-	ChunkHeader read_header(std::ifstream& file);
-	void write_deltas(std::ofstream& file, const std::vector<Timestamp> deltas) const;
-	std::vector<Timestamp> read_deltas(std::ifstream& file);
-	void write_values(std::ofstream& file, const std::vector<double> values) const;
-	std::vector<double> read_values(std::ifstream& file);
+	void write_header(std::ofstream& file, const Chunk& chunk) const;
+	ChunkHeader read_header(std::ifstream& file) const;
+	void write_deltas(std::ofstream& file, const std::vector<Timestamp>& deltas) const;
+	std::vector<Timestamp> read_deltas(std::ifstream& file) const;
+	void write_values(std::ofstream& file, const std::vector<double>& values) const;
+	std::vector<double> read_values(std::ifstream& file) const;
 };
 
 class ChunkTreeNode
 {
   public:
 	// Each key is a time range
-	std::vector<TimeRange> keys{};
+	std::vector<TimeRange> keys;
+	size_t key_count;
 	// Each value is either another node (for internal nodes) or chunk (for leaves)
-	std::vector<std::variant<std::unique_ptr<ChunkTreeNode>, std::unique_ptr<ChunkFile>>>
-		children{};
-	bool is_leaf;
-
-	ChunkTreeNode(bool leaf = false)
-		: is_leaf(leaf)
+	std::vector<std::variant<std::unique_ptr<ChunkTreeNode>, std::unique_ptr<ChunkFile>>> children;
+	size_t m_node_capacity;
+	bool m_is_leaf;
+	ChunkTreeNode(bool leaf = false, size_t node_capacity = 128)
+		: keys(node_capacity)
+		, key_count(0)
+		, children(node_capacity)
+		, m_node_capacity(node_capacity)
+		, m_is_leaf(leaf)
 	{
 	}
+
+	bool is_full() { return key_count == m_node_capacity; }
+	bool is_leaf() { return m_is_leaf; }
 };
 class ChunkManager
 {
   public:
-	ChunkManager()
-		: m_root(std::make_unique<ChunkTreeNode>(true))
+	ChunkManager(const std::string& data_path)
+		: m_root(std::make_unique<ChunkTreeNode>(true, MAX_NODE_SIZE))
+		, m_data_path(data_path)
 	{
 	}
 
+	// // Add move operations
+	// ChunkManager(ChunkManager&& other) = default;
+	// ChunkManager& operator=(ChunkManager&& other) = default;
+
+	// // Delete copy operations
+	// ChunkManager(const ChunkManager&) = delete;
+	// ChunkManager& operator=(const ChunkManager&) = delete;
+
+	void initialize();
 	std::unique_ptr<Chunk> get_chunk(Timestamp timestamp);
-	ChunkFile* find_chunk_file(Timestamp ts, std::unique_ptr<ChunkTreeNode> node);
+	ChunkFile* find_chunk_file(Timestamp ts, std::unique_ptr<ChunkTreeNode>& node);
 	void insert_chunk(std::unique_ptr<Chunk> chunk);
-	std::unique_ptr<Chunk> create_chunk(Timestamp timestamp);
+	std::unique_ptr<Chunk> create_chunk(Timestamp timestamp, ChunkId id);
 	Timestamp get_chunk_key(Timestamp timestamp) { return timestamp - (timestamp % (60 * 60)); }
-	ChunkId generate_chunk_id();
+	ChunkId generate_chunk_id() = delete;
 
   private:
 	std::unique_ptr<ChunkTreeNode> m_root;

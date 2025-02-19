@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <vector>
 
-void Chunk::insert(const DataPoint& point)
+void Chunk::append(const DataPoint& point)
 {
 	if (is_full())
 		return;

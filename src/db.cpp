@@ -1,12 +1,15 @@
 #include "db.h"
 #include "datapoint.h"
+#include <filesystem>
 #include <iostream>
 #include <memory>
 #include <string>
 
 void DataBase::create_table(const std::string& name)
 {
-	m_tables[name] = std::make_unique<Table>(name);
+	std::string table_path = create_table_path(name);
+	std::filesystem::create_directories(table_path);
+	m_tables[name] = std::make_unique<Table>(name, table_path);
 }
 
 void DataBase::insert(const std::string& table_name, const DataPoint& point)
@@ -20,7 +23,6 @@ void DataBase::insert(const std::string& table_name, const DataPoint& point)
 		std::cerr << "Table not found: " << table_name << '\n';
 	}
 }
-
 
 std::vector<DataPoint> const DataBase::query(
 	const std::string& table_name,

@@ -55,14 +55,14 @@ std::unique_ptr<Chunk> ChunkFile::load() const
 	inf.close();
 
 	// Create and return a Chunk object
-	std::unique_ptr<Chunk> chunk = std::make_unique<Chunk>(header.time_range, header.chunk_id);
+	std::unique_ptr<Chunk> chunk = std::make_unique<Chunk>(header.chunk_start_ts, header.chunk_id);
 
 	return chunk;
 }
 
 void ChunkFile::write_header(std::ofstream& file, const Chunk& chunk) const
 {
-	ChunkHeader header{ chunk.m_timerange, chunk.id() };
+	ChunkHeader header{ chunk.m_start_ts, chunk.id() };
 	file.write(reinterpret_cast<const char*>(&header), sizeof(header));
 	if (file.fail())
 	{

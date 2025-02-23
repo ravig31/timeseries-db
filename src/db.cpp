@@ -1,15 +1,17 @@
 #include "db.h"
 #include "datapoint.h"
+#include "query.h"
 #include <filesystem>
 #include <iostream>
 #include <memory>
 #include <string>
+#include <vector>
 
-void DataBase::create_table(const std::string& name)
+void DataBase::create_table(const std::string& name, Table::Config& options)
 {
 	std::string table_path = create_table_path(name);
 	std::filesystem::create_directories(table_path);
-	m_tables[name] = std::make_unique<Table>(name, table_path);
+	m_tables[name] = std::make_unique<Table>(name, table_path, options);
 }
 
 void DataBase::insert(const std::string& table_name, const DataPoint& point)
@@ -24,12 +26,14 @@ void DataBase::insert(const std::string& table_name, const DataPoint& point)
 	}
 }
 
-std::vector<DataPoint> const DataBase::query(
-	const std::string& table_name,
-	int64_t start_ts,
-	int64_t end_ts
-)
+std::vector<DataPoint> DataBase::query(const std::string& table_name, const Query& query)
 {
-	auto& table = m_tables[table_name];
-	return table->query(start_ts, end_ts);
+	if (auto table = m_tables.find(table_name); table != m_tables.end())
+	{
+		table->second->query(query);
+	}
+	else
+	{
+		std::cerr << "Table not found: " << table_name << '\n';
+	}
 }

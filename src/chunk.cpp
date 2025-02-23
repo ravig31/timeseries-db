@@ -5,6 +5,20 @@
 #include <memory>
 #include <vector>
 
+void Chunk::append(const DataPoint& point)
+{
+	if (is_full())
+	{
+		m_is_to_save = true;
+		return;
+	}
+
+	int64_t timedelta = point.encode_time_delta(m_range.start_ts);
+	m_ts_deltas.push_back(timedelta);
+	m_values.push_back(point.value);
+	m_points++;
+}
+
 void ChunkFile::save(const Chunk& chunk) const
 {
 	std::ofstream outf(m_chunk_path, std::ios::binary);
@@ -15,7 +29,7 @@ void ChunkFile::save(const Chunk& chunk) const
 
 	try
 	{
-		write_header(outf, chunk);
+		write_metadata(outf, chunk);
 		write_deltas(outf, chunk.m_ts_deltas);
 		write_values(outf, chunk.m_values);
 	}
@@ -36,13 +50,13 @@ std::unique_ptr<Chunk> ChunkFile::load() const
 		throw std::runtime_error("Failed to open chunk file for loading: " + m_chunk_path);
 	}
 
-	ChunkHeader header;
+	ChunkFile::Metadata metadata;
 	std::vector<Timestamp> deltas;
 	std::vector<double> values;
 
 	try
 	{
-		header = read_header(inf);
+		metadata = read_metadata(inf);
 		deltas = read_deltas(inf);
 		values = read_values(inf);
 	}
@@ -55,36 +69,36 @@ std::unique_ptr<Chunk> ChunkFile::load() const
 	inf.close();
 
 	// Create and return a Chunk object
-	std::unique_ptr<Chunk> chunk = std::make_unique<Chunk>(header.chunk_start_ts, header.chunk_id);
+	std::unique_ptr<Chunk> chunk = std::make_unique<Chunk>(metadata.chunk_range, metadata.chunk_id);
 
 	return chunk;
 }
 
-void ChunkFile::write_header(std::ofstream& file, const Chunk& chunk) const
+void ChunkFile::write_metadata(std::ofstream& file, const Chunk& chunk)
 {
-	ChunkHeader header{ chunk.m_start_ts, chunk.id() };
-	file.write(reinterpret_cast<const char*>(&header), sizeof(header));
+	ChunkFile::Metadata metadata{ chunk.id(), chunk.get_range() };
+	file.write(reinterpret_cast<const char*>(&metadata), sizeof(metadata));
 	if (file.fail())
 	{
-		throw std::runtime_error("Failed to write chunk header");
+		throw std::runtime_error("Failed to write chunk metadata");
 	}
 }
 
-ChunkFile::ChunkHeader ChunkFile::read_header(std::ifstream& file) const
+ChunkFile::ChunkFile::Metadata ChunkFile::read_metadata(std::ifstream& file)
 {
-	ChunkHeader header;
+	ChunkFile::Metadata metadata;
 
-	file.read(reinterpret_cast<char*>(&header), sizeof(header));
+	file.read(reinterpret_cast<char*>(&metadata), sizeof(metadata));
 
 	if (file.fail())
 	{
-		throw std::runtime_error("Failed to read chunk header");
+		throw std::runtime_error("Failed to read chunk metadata");
 	}
 
-	return header;
+	return metadata;
 }
 
-void ChunkFile::write_deltas(std::ofstream& file, const std::vector<Timestamp>& deltas) const
+void ChunkFile::write_deltas(std::ofstream& file, const std::vector<Timestamp>& deltas)
 {
 	// Write the number of deltas
 	size_t num_deltas = deltas.size();
@@ -102,7 +116,7 @@ void ChunkFile::write_deltas(std::ofstream& file, const std::vector<Timestamp>& 
 	}
 }
 
-std::vector<Timestamp> ChunkFile::read_deltas(std::ifstream& file) const
+std::vector<Timestamp> ChunkFile::read_deltas(std::ifstream& file)
 {
 	// Read the number of deltas first
 	size_t num_deltas;
@@ -123,7 +137,7 @@ std::vector<Timestamp> ChunkFile::read_deltas(std::ifstream& file) const
 	return deltas;
 }
 
-void ChunkFile::write_values(std::ofstream& file, const std::vector<double>& values) const
+void ChunkFile::write_values(std::ofstream& file, const std::vector<double>& values)
 {
 	// Write the number of deltas
 	size_t num_values = values.size();
@@ -141,7 +155,7 @@ void ChunkFile::write_values(std::ofstream& file, const std::vector<double>& val
 	}
 }
 
-std::vector<double> ChunkFile::read_values(std::ifstream& file) const
+std::vector<double> ChunkFile::read_values(std::ifstream& file)
 {
 	// Read the number of deltas first
 	size_t num_values;

@@ -3,6 +3,7 @@
 #include <iostream>
 #include <random>
 
+#include "config.h"
 #include "datapoint.h"
 #include "db.h"
 
@@ -31,22 +32,27 @@ std::vector<DataPoint> generate_test_data_fixed_intervals(
 int main()
 {
 	DataBase db{ "db1", "../tmp/tsdb" };
-	db.create_table("test_table");
+	Table::Config config{ Config::CHUNK_INTERVAL_SECS,
+						  Config::CHUNK_CACHE_SIZE,
+						  Config::MAX_CHUNKS_TO_SAVE,
+						  Config::FLUSH_INTERVAL_SECS };
+	db.create_table("test_table", config);
 
-    auto now = std::chrono::system_clock::now();
+	auto now = std::chrono::system_clock::now();
 
-    // Generate test data with 15-minute intervals:
-    size_t num_test_points = 30; // Number of data points
-    auto test_data = generate_test_data_fixed_intervals(num_test_points, now, std::chrono::minutes(15)); 
-
+	// Generate test data with 15-minute intervals:
+	size_t num_test_points = 6; // Number of data points
+	auto test_data =
+		generate_test_data_fixed_intervals(num_test_points, now, std::chrono::minutes(15));
 
 	for (const auto& point : test_data)
 	{
 		db.insert("test_table", point);
 	}
 
-	std::cout << db.get_table("test_table")->size() << '\n'; // Check size
-
+	Table* table = db.get_table("test_table");
+	std::cout << table->rows() << '\n'; // Check size
+	table->flush_chunks();
 	// ... (Your query logic)
 	return 0;
 }

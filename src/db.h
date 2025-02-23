@@ -2,8 +2,10 @@
 #include <filesystem>
 #include <memory>
 #include <unordered_map>
+#include <vector>
 
 #include "datapoint.h"
+#include "query.h"
 #include "table.h"
 
 class DataBase
@@ -15,22 +17,19 @@ class DataBase
 	{
 		std::filesystem::create_directories(filepath);
 	}
-
-	void create_table(const std::string& name);
+	// Need a way to batch insert points and after batch insertion make sure all  
+	std::vector<DataPoint> query(const std::string& table_name, const Query& query);
+	void create_table(const std::string& name, Table::Config&);
 	void insert(const std::string& table_name, const DataPoint& point);
-	std::vector<DataPoint> const query(
-		const std::string& table_name,
-		int64_t start_ts,
-		int64_t end_ts
-	);
-	
 	Table* get_table(const std::string& table_name) { return m_tables[table_name].get(); }
-	
-	private:
+
+  private:
+
+
 	std::string m_name;
 	std::string m_dbpath;
 	std::unordered_map<std::string, std::unique_ptr<Table>> m_tables;
-	
+
 	std::string create_table_path(const std::string& table_name)
 	{
 		return m_dbpath + '/' + table_name;

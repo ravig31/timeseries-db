@@ -60,7 +60,7 @@ ChunkFile* ChunkTree::find_chunk_file(ChunkTreeNode* node, Timestamp ts) const
 }
 
 void ChunkTree::gather_chunk_files_in_range(
-	ChunkTreeNode* node,
+	const ChunkTreeNode* node,
 	const TimeRange& range,
 	std::vector<ChunkFile*>& results
 ) const
@@ -75,6 +75,20 @@ void ChunkTree::gather_chunk_files_in_range(
 			if (range.contains(node->keys[i]))
 			{
 				results.push_back(std::get<std::unique_ptr<ChunkFile>>(node->children[i]).get());
+			}
+		}
+	}
+	else
+	{
+		for (size_t i{ 0 }; i < node->children.size(); i++)
+		{
+			if (i == 0 || i == node->children.size() - 1 || range.contains(node->keys[i - 1]))
+			{
+				gather_chunk_files_in_range(
+					std::get<std::unique_ptr<ChunkTreeNode>>(node->children[i]).get(),
+					range,
+					results
+				);
 			}
 		}
 	}

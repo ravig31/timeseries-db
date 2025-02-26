@@ -9,6 +9,7 @@
     - select
     - query etc.
 - background thread to flush
+- add check to avoid duplicate chunk keys in b-tree
 - test with large query/insert with large data set
 - querying of chunk files in paralell
 - test and compare with SQL

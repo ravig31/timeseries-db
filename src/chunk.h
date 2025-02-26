@@ -19,7 +19,7 @@ class Chunk
 		: m_range(range)
 		, m_id(id)
 		, m_capacity(capacity)
-		, m_points(0)
+		, m_row_count(0)
 		, m_is_to_save(false)
 
 	{
@@ -32,13 +32,13 @@ class Chunk
 		m_values.reserve(capacity);
 	}
 
+	std::vector<DataPoint> get_data_in_range(const TimeRange& range) const;
 	void append(const DataPoint& point);
-	std::vector<DataPoint> query() const;
 
 	ChunkId id() const { return m_id; }
 	const TimeRange& get_range() const { return m_range; }
 	bool is_to_save() const { return m_is_to_save; }
-	size_t size() const { return m_points; }
+	size_t size() const { return m_row_count; }
 	bool is_full() const { return m_ts_deltas.size() >= m_capacity; }
 	void mark_to_save() { m_is_to_save = true; }
 	void unmark_to_save() { m_is_to_save = false; }
@@ -50,7 +50,7 @@ class Chunk
 	const TimeRange m_range;
 	const ChunkId m_id;
 	const size_t m_capacity;
-	size_t m_points;
+	size_t m_row_count;
 	bool m_is_to_save;
 
 	friend class ChunkFile;
@@ -59,20 +59,28 @@ class Chunk
 class ChunkFile
 {
   public:
-	ChunkFile(const std::string& base_path, ChunkId chunk_id, TimeRange chunk_range)
-		: m_chunk_path(generate_filepath(base_path, chunk_id))
-		, m_metadata(Metadata{ chunk_id, chunk_range })
-	{
-	}
-	void save(const Chunk& chunk) const;
-	std::unique_ptr<Chunk> load() const;
-
-  private:
 	struct Metadata
 	{
 		ChunkId chunk_id;
 		TimeRange chunk_range;
+		size_t row_count;
 	};
+
+	ChunkFile(
+		const std::string& base_path,
+		ChunkId chunk_id,
+		TimeRange chunk_range,
+		size_t row_count
+	)
+		: m_chunk_path(generate_filepath(base_path, chunk_id))
+		, m_metadata(Metadata{ chunk_id, chunk_range, row_count })
+	{
+	}
+	void save(const Chunk& chunk) const;
+	std::unique_ptr<Chunk> load() const;
+	const Metadata& get_metadata() const { return m_metadata; }
+
+  private:
 	std::string m_chunk_path;
 	const Metadata m_metadata;
 

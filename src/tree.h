@@ -27,7 +27,7 @@ class ChunkTreeNode
 		keys.reserve(node_capacity + 1);
 	}
 
-	bool is_full() const { return children.size() == m_node_capacity; }
+	bool is_full() const { return keys.size() == m_node_capacity; }
 	bool is_leaf() const { return m_is_leaf; }
 
   private:
@@ -38,7 +38,7 @@ class ChunkTreeNode
 class ChunkTree
 {
   public:
-	ChunkTree(const std::string& data_path, const int64_t chunk_interval_secs)
+	ChunkTree(const std::string& data_path, const TimeDelta chunk_interval_secs)
 		: m_root(std::make_unique<ChunkTreeNode>(true))
 		, m_data_path(data_path)
 		, m_chunk_interval_secs(chunk_interval_secs)
@@ -51,7 +51,7 @@ class ChunkTree
   private:
 	std::unique_ptr<ChunkTreeNode> m_root;
 	std::string m_data_path;
-	int64_t m_chunk_interval_secs;
+	TimeDelta m_chunk_interval_secs;
 
 	// Utils
 	bool in_chunk_range(Timestamp chunk_end_ts, Timestamp timestamp) const
@@ -61,11 +61,11 @@ class ChunkTree
 
 	// Querying
 	void gather_chunk_files_in_range(
-		ChunkTreeNode* node,
+		const ChunkTreeNode* node,
 		const TimeRange& range,
 		std::vector<ChunkFile*>& results
 	) const;
-	ChunkFile* find_chunk_file(ChunkTreeNode* node, int64_t timestamp) const;
+	ChunkFile* find_chunk_file(ChunkTreeNode* node, Timestamp timestamp) const;
 
 	// Insertion
 	void split(ChunkTreeNode* parent, size_t index);

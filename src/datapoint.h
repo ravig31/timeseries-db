@@ -1,17 +1,15 @@
 #pragma once
 
-#include <cstdint>
-#include <string>
+#include "utils.h"
 
 struct DataPoint
 {
 
-	int64_t ts;
+	Timestamp ts;
 	double value;
-  std::string table_id;
 
-	int64_t encode_time_delta(int64_t prev) const 
+	TimeDelta encode_time_delta(Timestamp base_ts) const 
   {
-    return ts - prev;
+    return ts - base_ts;
   }
 };

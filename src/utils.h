@@ -4,6 +4,7 @@
 #include <limits>
 
 using Timestamp = int64_t;
+using TimeDelta = int64_t;
 using ChunkId = int64_t;
 
 struct TimeRange
@@ -30,6 +31,6 @@ struct TimeRange
 	{
 	}
 
-	int64_t duration() const { return end_ts - start_ts; }
-	bool contains(int64_t timestamp) const { return timestamp >= start_ts && timestamp <= end_ts; }
+	TimeDelta duration() const { return end_ts - start_ts; }
+	bool contains(Timestamp timestamp) const { return timestamp >= start_ts && timestamp <= end_ts; }
 };

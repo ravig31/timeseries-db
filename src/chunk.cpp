@@ -1,9 +1,24 @@
 #include "chunk.h"
+#include "datapoint.h"
 #include "utils.h"
 #include <cstddef>
 #include <fstream>
 #include <memory>
 #include <vector>
+
+std::vector<DataPoint> Chunk::get_data_in_range(const TimeRange& range) const
+{
+	// Could Optimise
+	std::vector<DataPoint> results{};
+	results.reserve(m_capacity);
+	for (size_t i{ 0 }; i < size(); i++)
+	{
+		const auto ts = m_range.start_ts + m_ts_deltas[i];
+		if (range.contains(ts))
+			results.push_back(DataPoint{ ts, m_values[i] });
+	}
+	return results;
+}
 
 void Chunk::append(const DataPoint& point)
 {
@@ -13,10 +28,10 @@ void Chunk::append(const DataPoint& point)
 		return;
 	}
 
-	int64_t timedelta = point.encode_time_delta(m_range.start_ts);
+	TimeDelta timedelta = point.encode_time_delta(m_range.start_ts);
 	m_ts_deltas.push_back(timedelta);
 	m_values.push_back(point.value);
-	m_points++;
+	m_row_count++;
 }
 
 void ChunkFile::save(const Chunk& chunk) const

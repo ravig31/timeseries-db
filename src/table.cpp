@@ -45,6 +45,7 @@ void Table::insert(const DataPoint& point)
 
 	if (it != m_chunk_cache.end())
 	{
+		// Could change to referece?
 		Chunk* chunk = it->second.get();
 		if (chunk && chunk->is_full())
 		{
@@ -102,8 +103,9 @@ std::shared_ptr<Chunk> Table::create_chunk(Timestamp partition_key)
 {
 	auto id = generate_chunk_id();
 	auto chunk = std::make_shared<Chunk>(
-		TimeRange{ partition_key - m_config.chunk_size_secs, partition_key },
-		id
+		TimeRange{ partition_key - m_config.chunk_size_secs, partition_key},
+		id,
+		m_config.chunk_capacity
 	);
 	return chunk;
 }
@@ -118,8 +120,13 @@ void Table::create_and_cache_chunk(const Timestamp& partition_key, const DataPoi
 
 void Table::finalise_chunk(std::shared_ptr<Chunk> chunk)
 {
-	auto chunk_file =
-		std::make_shared<ChunkFile>(m_data_path, chunk->id(), chunk->get_range(), chunk->size());
+	auto chunk_file = std::make_shared<ChunkFile>(
+		m_data_path,
+		chunk->id(),
+		chunk->get_range(),
+		chunk->size(),
+		chunk->capacity()
+	);
 
 	// Insert into tree and get a reference to the stored ChunkFile
 	m_chunk_tree.insert(chunk->get_range(), chunk_file); // Insert the shared_ptr
@@ -142,4 +149,14 @@ void Table::flush_chunks()
 		}
 	}
 	m_chunks_to_save.clear(); // Clear after saving
+}
+
+void Table::persist_all()
+{
+	for (auto [_, chunk] : m_chunk_cache)
+	{
+		finalise_chunk(std::move(chunk));
+	}
+	// TO REMOCE: Testing loading
+	m_chunk_cache.clear();
 }

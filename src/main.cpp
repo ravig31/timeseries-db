@@ -34,6 +34,7 @@ int main()
 {
 	DataBase db{ "db1", "../tmp/tsdb" };
 	Table::Config config{ Config::CHUNK_INTERVAL_SECS,
+							Config::MAX_CHUNK_SIZE,
 						  Config::CHUNK_CACHE_SIZE,
 						  Config::MAX_CHUNKS_TO_SAVE,
 						  Config::FLUSH_INTERVAL_SECS,
@@ -42,26 +43,51 @@ int main()
 
 	std::chrono::system_clock::time_point anchor =
 		std::chrono::system_clock::from_time_t(1740618000);
-	// Generate test data with 15-minute intervals:
-	size_t num_test_points = 30; // Number of data points
+	size_t num_test_points = 1000; // Number of data points
 	auto test_data =
-		generate_test_data_fixed_intervals(num_test_points, anchor, std::chrono::minutes(15));
+		generate_test_data_fixed_intervals(num_test_points, anchor, std::chrono::minutes(1));
 
 	for (const auto& point : test_data)
 	{
 		db.insert("test_table", point);
 	}
+
+	// Add functionality to db later
+	db.get_table("test_table")->persist_all();
 	db.get_table("test_table")->flush_chunks();
 
+
+
+	// Query
 	auto now_int = std::chrono::system_clock::to_time_t(anchor);
-	TimeRange q_range = TimeRange{ now_int, now_int + 3600 };
+	TimeRange q_range = TimeRange{ now_int, now_int + 7200 };
 	Query q = { q_range };
+	auto start = std::chrono::high_resolution_clock::now(); // Start timer
+
 	auto res = db.query("test_table", q);
 
+	auto end = std::chrono::high_resolution_clock::now(); // End timer
+	auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+
+	std::cout << "Query Time: " << duration.count() << " us" << "\n";
+
+	// Validate that all data points are within q_range
 	for (const auto& p : res)
 	{
-		std::cout << p.ts << ": " << p.value << "\n";
+		if (!(p.ts >= q.m_time_range.start_ts && p.ts <= q.m_time_range.end_ts))
+		{
+			std::cerr << "Error: Data point " << p.ts << " is outside the query range."
+					  << std::endl;
+		}
 	}
+
+	std::cout << "q_range: " << "(" << q.m_time_range.start_ts << "," << q.m_time_range.end_ts
+			  << ")" << "\n";
+	std::cout << "rows: " << res.size() << "\n";
+	// for (const auto& p : res)
+	// {
+	// 	std::cout << p.ts << ": " << p.value << "\n";
+	// }
 
 	// table->flush_chunks();
 	// ... (Your query logic)

@@ -65,7 +65,7 @@ std::unique_ptr<Chunk> ChunkFile::load() const
 		throw std::runtime_error("Failed to open chunk file for loading: " + m_chunk_path);
 	}
 
-	ChunkFile::Metadata metadata;
+	ChunkMetadata metadata;
 	std::vector<Timestamp> deltas;
 	std::vector<double> values;
 
@@ -81,16 +81,15 @@ std::unique_ptr<Chunk> ChunkFile::load() const
 		throw std::runtime_error("Error reading chunk data: " + std::string(e.what()));
 	}
 
-	inf.close();
-
 	// Create and return a Chunk object
-	std::unique_ptr<Chunk> chunk = std::make_unique<Chunk>(metadata.chunk_range, metadata.chunk_id);
+	std::unique_ptr<Chunk> chunk =
+		std::make_unique<Chunk>(metadata, std::move(deltas), std::move(values));
 	return chunk;
 }
 
 void ChunkFile::write_metadata(std::ofstream& file, const Chunk& chunk)
 {
-	ChunkFile::Metadata metadata{ chunk.id(), chunk.get_range(), chunk.size() };
+	ChunkMetadata metadata{ chunk.id(), chunk.get_range(), chunk.size(), chunk.capacity() };
 	file.write(reinterpret_cast<const char*>(&metadata), sizeof(metadata));
 	if (file.fail())
 	{
@@ -98,9 +97,9 @@ void ChunkFile::write_metadata(std::ofstream& file, const Chunk& chunk)
 	}
 }
 
-ChunkFile::ChunkFile::Metadata ChunkFile::read_metadata(std::ifstream& file)
+ChunkMetadata ChunkFile::read_metadata(std::ifstream& file)
 {
-	ChunkFile::Metadata metadata;
+	ChunkMetadata metadata;
 
 	file.read(reinterpret_cast<char*>(&metadata), sizeof(metadata));
 

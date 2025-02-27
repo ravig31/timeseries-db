@@ -17,6 +17,7 @@ class Table
 	struct Config
 	{
 		const TimeDelta chunk_size_secs;
+		const size_t chunk_capacity;
 		const size_t chunk_cache_size;
 		const size_t max_chunks_to_save;
 		const TimeDelta flush_interval_secs;
@@ -37,6 +38,7 @@ class Table
 	std::vector<DataPoint> query(const Query& q);
 	void insert(const DataPoint& data);
 
+	void persist_all();
 	void flush_chunks();
 
   private:
@@ -64,5 +66,4 @@ class Table
 	void finalise_chunk(std::shared_ptr<Chunk> chunk);
 	void flush_loop();
 
-	friend class QueryProcessor;
 };

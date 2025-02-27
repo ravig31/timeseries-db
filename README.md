@@ -8,6 +8,7 @@
     - count 
     - select
     - query etc.
+- look into b+tree
 - background thread to flush
 - add check to avoid duplicate chunk keys in b-tree
 - test with large query/insert with large data set

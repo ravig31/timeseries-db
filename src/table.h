@@ -34,7 +34,7 @@ class Table
 
 	size_t rows() { return m_row_count; }
 
-	std::vector<DataPoint> query(const Query& q) const;
+	std::vector<DataPoint> query(const Query& q);
 	void insert(const DataPoint& data);
 
 	void flush_chunks();
@@ -46,9 +46,8 @@ class Table
 	Config m_config;
 
 	ChunkTree m_chunk_tree;
-	// Change to weak_ptrs?
 	std::unordered_map<Timestamp, std::shared_ptr<Chunk>> m_chunk_cache;
-	std::vector<std::pair<ChunkFile*, std::shared_ptr<Chunk>>> m_chunks_to_save;
+	std::vector<std::pair<std::weak_ptr<ChunkFile>, std::shared_ptr<Chunk>>> m_chunks_to_save;
 
 	std::vector<DataPoint> gather_data_from_chunks(
 		const std::vector<std::shared_ptr<Chunk>>& chunks,
@@ -62,7 +61,7 @@ class Table
 	//Check
 	void create_and_cache_chunk(const Timestamp& partition_key, const DataPoint& point);
 
-	void finalise_chunk(const std::shared_ptr<Chunk>& chunk);
+	void finalise_chunk(std::shared_ptr<Chunk> chunk);
 	void flush_loop();
 
 	friend class QueryProcessor;

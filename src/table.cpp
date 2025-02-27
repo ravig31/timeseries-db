@@ -7,7 +7,7 @@
 #include <utility>
 #include <vector>
 
-std::vector<DataPoint> Table::query(const Query& q) const
+std::vector<DataPoint> Table::query(const Query& q)
 {
 	// consider using weak_ptrs here
 	auto chunk_files = m_chunk_tree.range_query(q.m_time_range);
@@ -23,16 +23,20 @@ std::vector<DataPoint> Table::query(const Query& q) const
 		}
 		else
 		{
+			// Add load datapoints in parallell
 			auto chunk = file->load();
 			if (chunk != nullptr)
-				chunks.push_back(std::move(chunk));
+			{
+				auto shared_chunk = std::shared_ptr<Chunk>(chunk.release());
+				m_chunk_cache[key] = shared_chunk;
+				chunks.push_back(shared_chunk);
+			}
 		}
 	}
-	// Add load datapoints in parallell
+	// Consider using weak_ptrs
 	auto results = gather_data_from_chunks(chunks, q.m_time_range);
 	return results;
 }
-
 
 void Table::insert(const DataPoint& point)
 {
@@ -44,6 +48,7 @@ void Table::insert(const DataPoint& point)
 		Chunk* chunk = it->second.get();
 		if (chunk && chunk->is_full())
 		{
+			// Evict chunk from cache
 			if (it != m_chunk_cache.end())
 			{
 				finalise_chunk(std::move(it->second));
@@ -111,25 +116,30 @@ void Table::create_and_cache_chunk(const Timestamp& partition_key, const DataPoi
 	m_chunk_cache[partition_key] = std::move(new_chunk);
 }
 
-void Table::finalise_chunk(const std::shared_ptr<Chunk>& chunk)
+void Table::finalise_chunk(std::shared_ptr<Chunk> chunk)
 {
 	auto chunk_file =
 		std::make_shared<ChunkFile>(m_data_path, chunk->id(), chunk->get_range(), chunk->size());
 
-	// Insert into tree first and get a reference to the stored ChunkFile
-	ChunkFile& stored_file = *chunk_file; // Get reference before moving
-	m_chunk_tree.insert(chunk->get_range(), std::move(chunk_file));
+	// Insert into tree and get a reference to the stored ChunkFile
+	m_chunk_tree.insert(chunk->get_range(), chunk_file); // Insert the shared_ptr
 
-	// Store reference to the ChunkFile along with the chunk
-	m_chunks_to_save.emplace_back(&stored_file, std::move(chunk));
+	// Store weak pointer to the ChunkFile along with the chunk
+	m_chunks_to_save.emplace_back(std::weak_ptr<ChunkFile>(chunk_file), std::move(chunk));
 }
 
 void Table::flush_chunks()
 {
-	for (const auto& [chunk_file_ref, chunk] : m_chunks_to_save)
+	for (auto& [chunk_file_weak, chunk] : m_chunks_to_save)
 	{
-		// Use .get() on reference_wrapper to get the actual reference
-		chunk_file_ref->save(*chunk);
+		if (auto chunk_file_shared = chunk_file_weak.lock())
+		{
+			chunk_file_shared->save(*chunk);
 		}
+		else
+		{
+			// the weak pointer has expired. Skip this chunk.
+		}
+	}
 	m_chunks_to_save.clear(); // Clear after saving
 }

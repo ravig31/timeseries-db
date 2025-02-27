@@ -9,36 +9,30 @@
 
 std::vector<DataPoint> Table::query(const Query& q) const
 {
-
+	// consider using weak_ptrs here
 	auto chunk_files = m_chunk_tree.range_query(q.m_time_range);
-	// std::vector<std::shared_ptr<Chunk>> chunks{};
+	std::vector<std::shared_ptr<Chunk>> chunks{};
 
-	// for (const auto& file : chunk_files)
-	// {
-	// 	Timestamp key = file->get_metadata().chunk_range.end_ts;
-	// 	if (m_chunk_cache.count(key))
-	// 	{
-	// 		// Searh cache for chunks in range
-	// 		auto it = m_chunk_cache.find(key);
-	// 		if (it != m_chunk_cache.end())
-	// 		{
-	// 			if (it->second != nullptr)
-	// 				chunks.push_back(it->second);
-	// 		}
-	// 		else
-	// 		{
-	// 			std::unique_ptr<Chunk> chunk = file->load();
-	// 			if (chunk != nullptr)
-	// 				chunks.push_back(std::move(chunk));
-	// 			// Implement add to cache here but need to implement eviction policy
-	// 		}
-	// 	}
-	// }
-
-	// // Add load datapoints in parallell
-	// auto results = gather_data_from_chunks(chunks, q.m_time_range);
-	return std::vector<DataPoint> {};
+	for (const auto& file : chunk_files)
+	{
+		Timestamp key = file->get_metadata().chunk_range.end_ts;
+		auto it = m_chunk_cache.find(key);
+		if (it != m_chunk_cache.end())
+		{
+			chunks.push_back(it->second);
+		}
+		else
+		{
+			auto chunk = file->load();
+			if (chunk != nullptr)
+				chunks.push_back(std::move(chunk));
+		}
+	}
+	// Add load datapoints in parallell
+	auto results = gather_data_from_chunks(chunks, q.m_time_range);
+	return results;
 }
+
 
 void Table::insert(const DataPoint& point)
 {
@@ -50,7 +44,11 @@ void Table::insert(const DataPoint& point)
 		Chunk* chunk = it->second.get();
 		if (chunk && chunk->is_full())
 		{
-			evict_chunk(it);
+			if (it != m_chunk_cache.end())
+			{
+				finalise_chunk(std::move(it->second));
+				m_chunk_cache.erase(it);
+			}
 			create_and_cache_chunk(partition_key, point);
 		}
 		else if (chunk)
@@ -113,16 +111,7 @@ void Table::create_and_cache_chunk(const Timestamp& partition_key, const DataPoi
 	m_chunk_cache[partition_key] = std::move(new_chunk);
 }
 
-void Table::evict_chunk(std::unordered_map<Timestamp, std::shared_ptr<Chunk>>::iterator& it)
-{
-	if (it != m_chunk_cache.end())
-	{
-		finalise_chunk(std::move(it->second));
-		m_chunk_cache.erase(it);
-	}
-}
-
-void Table::finalise_chunk(std::shared_ptr<Chunk> chunk)
+void Table::finalise_chunk(const std::shared_ptr<Chunk>& chunk)
 {
 	auto chunk_file =
 		std::make_shared<ChunkFile>(m_data_path, chunk->id(), chunk->get_range(), chunk->size());
@@ -141,6 +130,6 @@ void Table::flush_chunks()
 	{
 		// Use .get() on reference_wrapper to get the actual reference
 		chunk_file_ref->save(*chunk);
-	}
+		}
 	m_chunks_to_save.clear(); // Clear after saving
 }

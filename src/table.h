@@ -46,8 +46,8 @@ class Table
 	Config m_config;
 
 	ChunkTree m_chunk_tree;
+	// Change to weak_ptrs?
 	std::unordered_map<Timestamp, std::shared_ptr<Chunk>> m_chunk_cache;
-	// Check
 	std::vector<std::pair<ChunkFile*, std::shared_ptr<Chunk>>> m_chunks_to_save;
 
 	std::vector<DataPoint> gather_data_from_chunks(
@@ -60,10 +60,9 @@ class Table
 
 	std::shared_ptr<Chunk> create_chunk(Timestamp partition_key);
 	//Check
-	void evict_chunk(std::unordered_map<Timestamp, std::shared_ptr<Chunk>>::iterator& it);
 	void create_and_cache_chunk(const Timestamp& partition_key, const DataPoint& point);
 
-	void finalise_chunk(std::shared_ptr<Chunk> chunk);
+	void finalise_chunk(const std::shared_ptr<Chunk>& chunk);
 	void flush_loop();
 
 	friend class QueryProcessor;

@@ -85,13 +85,12 @@ std::unique_ptr<Chunk> ChunkFile::load() const
 
 	// Create and return a Chunk object
 	std::unique_ptr<Chunk> chunk = std::make_unique<Chunk>(metadata.chunk_range, metadata.chunk_id);
-
 	return chunk;
 }
 
 void ChunkFile::write_metadata(std::ofstream& file, const Chunk& chunk)
 {
-	ChunkFile::Metadata metadata{ chunk.id(), chunk.get_range() };
+	ChunkFile::Metadata metadata{ chunk.id(), chunk.get_range(), chunk.size() };
 	file.write(reinterpret_cast<const char*>(&metadata), sizeof(metadata));
 	if (file.fail())
 	{

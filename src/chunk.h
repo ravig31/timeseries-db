@@ -38,6 +38,7 @@ class Chunk
 	ChunkId id() const { return m_id; }
 	const TimeRange& get_range() const { return m_range; }
 	bool is_to_save() const { return m_is_to_save; }
+	void set_to_save(bool is_to_save) { m_is_to_save = is_to_save; }
 	size_t size() const { return m_row_count; }
 	bool is_full() const { return m_ts_deltas.size() >= m_capacity; }
 	void mark_to_save() { m_is_to_save = true; }

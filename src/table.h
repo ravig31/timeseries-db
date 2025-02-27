@@ -32,8 +32,6 @@ class Table
 	{
 	}
 
-	~Table() { flush_chunks(); }
-
 	size_t rows() { return m_row_count; }
 
 	std::vector<DataPoint> query(const Query& q) const;
@@ -48,22 +46,24 @@ class Table
 	Config m_config;
 
 	ChunkTree m_chunk_tree;
-	std::unordered_map<Timestamp, std::unique_ptr<Chunk>> m_chunk_cache;
-	std::vector<std::pair<ChunkFile*, std::unique_ptr<Chunk>>> m_chunks_to_save;
+	std::unordered_map<Timestamp, std::shared_ptr<Chunk>> m_chunk_cache;
+	// Check
+	std::vector<std::pair<ChunkFile*, std::shared_ptr<Chunk>>> m_chunks_to_save;
 
 	std::vector<DataPoint> gather_data_from_chunks(
-		const std::vector<const Chunk*>& chunks,
+		const std::vector<std::shared_ptr<Chunk>>& chunks,
 		const TimeRange& query_range
 	) const;
 
 	Timestamp get_partition_key(Timestamp timestamp);
 	ChunkId generate_chunk_id();
 
-	std::unique_ptr<Chunk> create_chunk(Timestamp partition_key);
-	void evict_chunk(std::unordered_map<Timestamp, std::unique_ptr<Chunk>>::iterator& it);
+	std::shared_ptr<Chunk> create_chunk(Timestamp partition_key);
+	//Check
+	void evict_chunk(std::unordered_map<Timestamp, std::shared_ptr<Chunk>>::iterator& it);
 	void create_and_cache_chunk(const Timestamp& partition_key, const DataPoint& point);
 
-	void finalise_chunk(std::unique_ptr<Chunk> chunk);
+	void finalise_chunk(std::shared_ptr<Chunk> chunk);
 	void flush_loop();
 
 	friend class QueryProcessor;

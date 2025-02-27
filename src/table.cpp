@@ -9,35 +9,35 @@
 
 std::vector<DataPoint> Table::query(const Query& q) const
 {
-	const ChunkTree& chunk_tree{ m_chunk_tree };
-	const std::vector<ChunkFile*> chunk_files = chunk_tree.range_query(q.m_time_range);
 
-	std::vector<const Chunk*> chunks{};
-	for (auto* file : chunk_files)
-	{
-		Timestamp key = file->get_metadata().chunk_range.end_ts;
-		if (m_chunk_cache.count(key))
-		{
-			// Searh cache for chunks in range
-			auto it = m_chunk_cache.find(key);
-			if (it != m_chunk_cache.end())
-			{
-				if (it->second != nullptr)
-					chunks.push_back(it->second.get());
-			}
-			else
-			{
-				std::unique_ptr<Chunk> chunk = file->load();
-				if (chunk != nullptr)
-					chunks.push_back(chunk.get());
-				// Implement add to cache here but need to implement eviction policy
-			}
-		}
-	}
+	auto chunk_files = m_chunk_tree.range_query(q.m_time_range);
+	// std::vector<std::shared_ptr<Chunk>> chunks{};
 
-	// Add load datapoints in parallell
-	auto results = gather_data_from_chunks(chunks, q.m_time_range);
-	return results;
+	// for (const auto& file : chunk_files)
+	// {
+	// 	Timestamp key = file->get_metadata().chunk_range.end_ts;
+	// 	if (m_chunk_cache.count(key))
+	// 	{
+	// 		// Searh cache for chunks in range
+	// 		auto it = m_chunk_cache.find(key);
+	// 		if (it != m_chunk_cache.end())
+	// 		{
+	// 			if (it->second != nullptr)
+	// 				chunks.push_back(it->second);
+	// 		}
+	// 		else
+	// 		{
+	// 			std::unique_ptr<Chunk> chunk = file->load();
+	// 			if (chunk != nullptr)
+	// 				chunks.push_back(std::move(chunk));
+	// 			// Implement add to cache here but need to implement eviction policy
+	// 		}
+	// 	}
+	// }
+
+	// // Add load datapoints in parallell
+	// auto results = gather_data_from_chunks(chunks, q.m_time_range);
+	return std::vector<DataPoint> {};
 }
 
 void Table::insert(const DataPoint& point)
@@ -66,13 +66,15 @@ void Table::insert(const DataPoint& point)
 }
 
 std::vector<DataPoint> Table::gather_data_from_chunks(
-	const std::vector<const Chunk*>& chunks,
+	const std::vector<std::shared_ptr<Chunk>>& chunks,
 	const TimeRange& query_range
 ) const
 {
-	std::vector<DataPoint> results {};
-	results.reserve(query_range.duration() / (m_config.chunk_size_secs / m_config.min_resolution_secs));
-	for (const auto* chunk : chunks)
+	std::vector<DataPoint> results{};
+	results.reserve(
+		query_range.duration() / (m_config.chunk_size_secs / m_config.min_resolution_secs)
+	);
+	for (const auto& chunk : chunks)
 	{
 		auto data = chunk->get_data_in_range(query_range);
 		results.insert(results.end(), data.begin(), data.end());
@@ -93,10 +95,10 @@ ChunkId Table::generate_chunk_id()
 	return next_id++;
 }
 
-std::unique_ptr<Chunk> Table::create_chunk(Timestamp partition_key)
+std::shared_ptr<Chunk> Table::create_chunk(Timestamp partition_key)
 {
 	auto id = generate_chunk_id();
-	auto chunk = std::make_unique<Chunk>(
+	auto chunk = std::make_shared<Chunk>(
 		TimeRange{ partition_key - m_config.chunk_size_secs, partition_key },
 		id
 	);
@@ -105,13 +107,13 @@ std::unique_ptr<Chunk> Table::create_chunk(Timestamp partition_key)
 
 void Table::create_and_cache_chunk(const Timestamp& partition_key, const DataPoint& point)
 {
-	std::unique_ptr<Chunk> new_chunk = create_chunk(partition_key);
+	auto new_chunk = create_chunk(partition_key);
 	new_chunk->append(point);
 	m_row_count++;
 	m_chunk_cache[partition_key] = std::move(new_chunk);
 }
 
-void Table::evict_chunk(std::unordered_map<Timestamp, std::unique_ptr<Chunk>>::iterator& it)
+void Table::evict_chunk(std::unordered_map<Timestamp, std::shared_ptr<Chunk>>::iterator& it)
 {
 	if (it != m_chunk_cache.end())
 	{
@@ -120,10 +122,10 @@ void Table::evict_chunk(std::unordered_map<Timestamp, std::unique_ptr<Chunk>>::i
 	}
 }
 
-void Table::finalise_chunk(std::unique_ptr<Chunk> chunk)
+void Table::finalise_chunk(std::shared_ptr<Chunk> chunk)
 {
 	auto chunk_file =
-		std::make_unique<ChunkFile>(m_data_path, chunk->id(), chunk->get_range(), chunk->size());
+		std::make_shared<ChunkFile>(m_data_path, chunk->id(), chunk->get_range(), chunk->size());
 
 	// Insert into tree first and get a reference to the stored ChunkFile
 	ChunkFile& stored_file = *chunk_file; // Get reference before moving

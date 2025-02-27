@@ -5,7 +5,6 @@
 #include "utils.h"
 
 #include <cstddef>
-#include <cstdint>
 #include <memory>
 #include <string>
 #include <sys/types.h>
@@ -17,7 +16,7 @@ class ChunkTreeNode
 	// Each key is a time range
 	std::vector<Timestamp> keys;
 	// Each value is either another node (for internal nodes) or chunk (for leaves)
-	std::vector<std::variant<std::unique_ptr<ChunkTreeNode>, std::unique_ptr<ChunkFile>>> children;
+	std::vector<std::variant<std::unique_ptr<ChunkTreeNode>, std::shared_ptr<ChunkFile>>> children;
 
 	ChunkTreeNode(const bool leaf = false, const size_t node_capacity = Config::MAX_NODE_SIZE)
 		: m_node_capacity(node_capacity)
@@ -45,8 +44,8 @@ class ChunkTree
 	{
 	}
 
-	std::vector<ChunkFile*> range_query(const TimeRange& range) const;
-	void insert(const TimeRange& range, std::unique_ptr<ChunkFile> chunk_file);
+	std::vector<std::shared_ptr<ChunkFile>> range_query(const TimeRange& range) const;
+	void insert(const TimeRange& range, std::shared_ptr<ChunkFile> chunk_file);
 
   private:
 	std::unique_ptr<ChunkTreeNode> m_root;
@@ -63,15 +62,15 @@ class ChunkTree
 	void gather_chunk_files_in_range(
 		const ChunkTreeNode* node,
 		const TimeRange& range,
-		std::vector<ChunkFile*>& results
+		std::vector<std::shared_ptr<ChunkFile>>& results
 	) const;
-	ChunkFile* find_chunk_file(ChunkTreeNode* node, Timestamp timestamp) const;
+	// ChunkFile* find_chunk_file(ChunkTreeNode* node, Timestamp timestamp) const;
 
 	// Insertion
 	void split(ChunkTreeNode* parent, size_t index);
 	void insert_non_full(
 		ChunkTreeNode* node,
 		const TimeRange& range,
-		std::unique_ptr<ChunkFile> chunk_file
+		std::shared_ptr<ChunkFile> chunk_file
 	);
 };

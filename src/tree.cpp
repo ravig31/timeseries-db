@@ -7,16 +7,14 @@
 #include <memory>
 #include <vector>
 
-std::vector<ChunkFile*> ChunkTree::range_query(const TimeRange& range) const
+std::vector<std::shared_ptr<ChunkFile>> ChunkTree::range_query(const TimeRange& range) const
 {
-	std::vector<ChunkFile*> results{};
-	results.reserve(range.duration() / m_chunk_interval_secs);
+	std::vector<std::shared_ptr<ChunkFile>> results{};
 	gather_chunk_files_in_range(m_root.get(), range, results);
-
 	return results;
 }
 
-void ChunkTree::insert(const TimeRange& range, std::unique_ptr<ChunkFile> chunk_file)
+void ChunkTree::insert(const TimeRange& range, std::shared_ptr<ChunkFile> chunk_file)
 {
 
 	if (m_root->is_full())
@@ -30,39 +28,39 @@ void ChunkTree::insert(const TimeRange& range, std::unique_ptr<ChunkFile> chunk_
 	insert_non_full(m_root.get(), range, std::move(chunk_file));
 }
 
-ChunkFile* ChunkTree::find_chunk_file(ChunkTreeNode* node, Timestamp ts) const
-{
+// ChunkFile* ChunkTree::find_chunk_file(ChunkTreeNode* node, Timestamp ts) const
+// {
 
-	if (node->is_leaf())
-	{
-		for (size_t i = 0; i < node->keys.size(); ++i)
-		{
-			if (in_chunk_range(node->keys[i], ts))
-			{
-				// Return the shared_ptr to the ChunkFile
-				return std::get<std::unique_ptr<ChunkFile>>(node->children[i]).get();
-			}
-		}
-		return nullptr;
-	}
-	else
-	{
-		for (size_t i = 0; i < node->keys.size(); ++i)
-		{
-			if (i == node->keys.size() - 1 || ts < node->keys[i + 1])
-			{
-				auto child_node = std::get<std::unique_ptr<ChunkTreeNode>>(node->children[i]).get();
-				return find_chunk_file(child_node, ts);
-			}
-		}
-		return nullptr;
-	}
-}
+// 	if (node->is_leaf())
+// 	{
+// 		for (size_t i = 0; i < node->keys.size(); ++i)
+// 		{
+// 			if (in_chunk_range(node->keys[i], ts))
+// 			{
+// 				// Return the shared_ptr to the ChunkFile
+// 				return std::get<std::unique_ptr<ChunkFile>>(node->children[i]).get();
+// 			}
+// 		}
+// 		return nullptr;
+// 	}
+// 	else
+// 	{
+// 		for (size_t i = 0; i < node->keys.size(); ++i)
+// 		{
+// 			if (i == node->keys.size() - 1 || ts < node->keys[i + 1])
+// 			{
+// 				auto child_node = std::get<std::unique_ptr<ChunkTreeNode>>(node->children[i]).get();
+// 				return find_chunk_file(child_node, ts);
+// 			}
+// 		}
+// 		return nullptr;
+// 	}
+// }
 
 void ChunkTree::gather_chunk_files_in_range(
 	const ChunkTreeNode* node,
 	const TimeRange& range,
-	std::vector<ChunkFile*>& results
+	std::vector<std::shared_ptr<ChunkFile>>& results
 ) const
 {
 	if (!node)
@@ -74,7 +72,7 @@ void ChunkTree::gather_chunk_files_in_range(
 		{
 			if (range.contains(node->keys[i]))
 			{
-				results.push_back(std::get<std::unique_ptr<ChunkFile>>(node->children[i]).get());
+				results.push_back(std::get<std::shared_ptr<ChunkFile>>(node->children[i]));
 			}
 		}
 	}
@@ -126,7 +124,7 @@ void ChunkTree::split(ChunkTreeNode* parent, size_t index)
 void ChunkTree::insert_non_full(
 	ChunkTreeNode* node,
 	const TimeRange& range,
-	std::unique_ptr<ChunkFile> chunk_file
+	std::shared_ptr<ChunkFile> chunk_file
 )
 {
 

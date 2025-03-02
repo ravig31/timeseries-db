@@ -68,11 +68,12 @@ void ChunkTree::gather_chunk_files_in_range(
 
 	if (node->is_leaf())
 	{
-		for (size_t i{ 0 }; i < node->keys.size(); i++)
+		for (size_t i{ 0 }; i < node->children.size(); i++)
 		{
-			if (range.contains(node->keys[i]))
+			auto& chunk = std::get<std::shared_ptr<ChunkFile>>(node->children[i]);
+			if (range.overlaps(chunk->get_metadata().chunk_range))
 			{
-				results.push_back(std::get<std::shared_ptr<ChunkFile>>(node->children[i]));
+				results.push_back(chunk);
 			}
 		}
 	}
@@ -119,6 +120,12 @@ void ChunkTree::split(ChunkTreeNode* parent, size_t index)
 	// Cleanup original child
 	child->keys.erase(child->keys.begin() + mid_index, child->keys.end());
 	child->children.erase(child->children.begin() + mid_index + 1, child->children.end());
+
+	if (child->is_leaf())
+	{
+		new_node->next_node = child->next_node;
+		child->next_node = new_node.get();
+	}
 }
 
 void ChunkTree::insert_non_full(
@@ -139,12 +146,8 @@ void ChunkTree::insert_non_full(
 			auto it = std::lower_bound(node->keys.begin(), node->keys.end(), range.end_ts);
 			index = std::distance(node->keys.begin(), it);
 		}
-
-		// If can insert keys
-		if (!node->is_full())
-			// Insert using the insert method for vectors.
-			node->keys.insert(node->keys.begin() + index, range.end_ts);
-
+		// Insert using the insert method for vectors.
+		node->keys.insert(node->keys.begin() + index, range.end_ts);
 		// Find the insertion point in children, which should align with keys.
 		auto child_it = node->children.begin() + index;
 		node->children.insert(child_it, std::move(chunk_file));

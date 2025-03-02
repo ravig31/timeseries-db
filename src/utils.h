@@ -33,4 +33,5 @@ struct TimeRange
 
 	TimeDelta duration() const { return end_ts - start_ts; }
 	bool contains(Timestamp timestamp) const { return timestamp >= start_ts && timestamp <= end_ts; }
+	bool overlaps(TimeRange range) const { return start_ts <= range.end_ts && range.start_ts < end_ts ;}
 };

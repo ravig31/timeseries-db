@@ -43,18 +43,14 @@ int main()
 
 	std::chrono::system_clock::time_point anchor =
 		std::chrono::system_clock::from_time_t(1740618000);
-	size_t num_test_points = 1000; // Number of data points
+	size_t num_test_points = 30; // Number of data points
 	auto test_data =
-		generate_test_data_fixed_intervals(num_test_points, anchor, std::chrono::minutes(1));
+		generate_test_data_fixed_intervals(num_test_points, anchor, std::chrono::minutes(15));
 
-	for (const auto& point : test_data)
-	{
-		db.insert("test_table", point);
-	}
+	db.insert("test_table", test_data);
 
 	// Add functionality to db later
-	db.get_table("test_table")->persist_all();
-	db.get_table("test_table")->flush_chunks();
+
 
 
 

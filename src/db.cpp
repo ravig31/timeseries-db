@@ -26,6 +26,23 @@ void DataBase::insert(const std::string& table_name, const DataPoint& point)
 	}
 }
 
+void DataBase::insert(const std::string& table_name, const std::vector<DataPoint>& points)
+{
+	if (auto table = m_tables.find(table_name); table != m_tables.end())
+	{
+		for (const auto& point : points)
+		{
+			table->second->insert(point);
+		}
+		table->second->finalise_all();
+		table->second->flush_chunks();
+	}
+	else
+	{
+		std::cerr << "Table not found: " << table_name << '\n';
+	}
+}
+
 std::vector<DataPoint> DataBase::query(const std::string& table_name, const Query& query)
 {	
 	std::vector<DataPoint> results {};

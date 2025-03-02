@@ -1,5 +1,6 @@
 #pragma once
 #include <cstddef>
+#include <list>
 #include <memory>
 #include <string>
 #include <utility>
@@ -38,7 +39,7 @@ class Table
 	std::vector<DataPoint> query(const Query& q);
 	void insert(const DataPoint& data);
 
-	void persist_all();
+	void finalise_all();
 	void flush_chunks();
 
   private:
@@ -46,24 +47,30 @@ class Table
 	std::string m_data_path;
 	size_t m_row_count;
 	Config m_config;
+	Timestamp m_latest_point_ts;
 
+	// Querying
 	ChunkTree m_chunk_tree;
-	std::unordered_map<Timestamp, std::shared_ptr<Chunk>> m_chunk_cache;
-	std::vector<std::pair<std::weak_ptr<ChunkFile>, std::shared_ptr<Chunk>>> m_chunks_to_save;
-
 	std::vector<DataPoint> gather_data_from_chunks(
 		const std::vector<std::shared_ptr<Chunk>>& chunks,
 		const TimeRange& query_range
 	) const;
-
+	
+	// Utils
 	Timestamp get_partition_key(Timestamp timestamp);
 	ChunkId generate_chunk_id();
-
+	
+	// Creation
 	std::shared_ptr<Chunk> create_chunk(Timestamp partition_key);
-	//Check
-	void create_and_cache_chunk(const Timestamp& partition_key, const DataPoint& point);
-
+	
+	// Caching
+	std::unordered_map<Timestamp, std::pair<std::shared_ptr<Chunk>, std::list<Timestamp>::iterator>>
+		m_chunk_cache;
+	std::list<Timestamp> m_chunk_cache_usage_list;
+	std::shared_ptr<Chunk> get_chunk_from_cache(Timestamp partition_key);
+    void put_chunk_in_cache(Timestamp partition_key, std::shared_ptr<Chunk> chunk);
+	void evict_from_cache(Timestamp partition_key);
+	
+	std::vector<std::pair<std::weak_ptr<ChunkFile>, std::shared_ptr<Chunk>>> m_chunks_to_save;
 	void finalise_chunk(std::shared_ptr<Chunk> chunk);
-	void flush_loop();
-
 };

@@ -2,6 +2,7 @@
 #include "chunk.h"
 #include "datapoint.h"
 #include "utils.h"
+#include <cassert>
 #include <cstddef>
 #include <memory>
 #include <utility>
@@ -16,10 +17,11 @@ std::vector<DataPoint> Table::query(const Query& q)
 	for (const auto& file : chunk_files)
 	{
 		Timestamp key = file->get_metadata().chunk_range.end_ts;
-		auto it = m_chunk_cache.find(key);
-		if (it != m_chunk_cache.end())
+		auto chunk = get_chunk_from_cache(key);
+
+		if (chunk != nullptr)
 		{
-			chunks.push_back(it->second);
+			chunks.push_back(chunk);
 		}
 		else
 		{
@@ -28,7 +30,7 @@ std::vector<DataPoint> Table::query(const Query& q)
 			if (chunk != nullptr)
 			{
 				auto shared_chunk = std::shared_ptr<Chunk>(chunk.release());
-				m_chunk_cache[key] = shared_chunk;
+				put_chunk_in_cache(key, std::move(chunk));
 				chunks.push_back(shared_chunk);
 			}
 		}
@@ -40,33 +42,23 @@ std::vector<DataPoint> Table::query(const Query& q)
 
 void Table::insert(const DataPoint& point)
 {
-	Timestamp partition_key = get_partition_key(point.ts);
-	auto it = m_chunk_cache.find(partition_key);
+	assert(point.ts > m_latest_point_ts && "Does not support historical data implementation");
+	m_latest_point_ts = point.ts;
 
-	if (it != m_chunk_cache.end())
+	Timestamp partition_key = get_partition_key(point.ts);
+	auto chunk = get_chunk_from_cache(partition_key);
+
+	if (chunk != nullptr)
 	{
-		// Could change to referece?
-		Chunk* chunk = it->second.get();
-		if (chunk && chunk->is_full())
-		{
-			// Evict chunk from cache
-			if (it != m_chunk_cache.end())
-			{
-				finalise_chunk(std::move(it->second));
-				m_chunk_cache.erase(it);
-			}
-			create_and_cache_chunk(partition_key, point);
-		}
-		else if (chunk)
-		{
-			chunk->append(point);
-			m_row_count++;
-		}
+		chunk->append(point);
 	}
 	else
 	{
-		create_and_cache_chunk(partition_key, point);
+		auto new_chunk = create_chunk(partition_key);
+		new_chunk->append(point);
+		put_chunk_in_cache(partition_key, std::move(new_chunk));
 	}
+	m_row_count++;
 }
 
 std::vector<DataPoint> Table::gather_data_from_chunks(
@@ -103,20 +95,55 @@ std::shared_ptr<Chunk> Table::create_chunk(Timestamp partition_key)
 {
 	auto id = generate_chunk_id();
 	auto chunk = std::make_shared<Chunk>(
-		TimeRange{ partition_key - m_config.chunk_size_secs, partition_key},
+		TimeRange{ partition_key - m_config.chunk_size_secs, partition_key },
 		id,
 		m_config.chunk_capacity
 	);
 	return chunk;
 }
 
-void Table::create_and_cache_chunk(const Timestamp& partition_key, const DataPoint& point)
+std::shared_ptr<Chunk> Table::get_chunk_from_cache(Timestamp partition_key)
 {
-	auto new_chunk = create_chunk(partition_key);
-	new_chunk->append(point);
-	m_row_count++;
-	m_chunk_cache[partition_key] = std::move(new_chunk);
+	auto it = m_chunk_cache.find(partition_key);
+	if (it != m_chunk_cache.end())
+	{
+		m_chunk_cache_usage_list.erase(it->second.second);
+		m_chunk_cache_usage_list.push_front(partition_key);
+		it->second.second = m_chunk_cache_usage_list.begin();
+		return it->second.first;
+	}
+	return nullptr;
 }
+
+void Table::put_chunk_in_cache(Timestamp partition_key, std::shared_ptr<Chunk> chunk)
+{
+	auto it = m_chunk_cache.find(partition_key);
+	if (it != m_chunk_cache.end())
+	{
+		m_chunk_cache_usage_list.erase(it->second.second);
+		m_chunk_cache_usage_list.push_front(partition_key);
+		it->second.second = m_chunk_cache_usage_list.begin();
+	}
+	else
+	{
+		if (m_chunk_cache.size() >= m_config.chunk_cache_size)
+		{
+			Timestamp lru_key = m_chunk_cache_usage_list.back();
+			evict_from_cache(lru_key);
+		}
+		m_chunk_cache_usage_list.push_front(partition_key);
+		m_chunk_cache[partition_key] = { std::move(chunk), m_chunk_cache_usage_list.begin() };
+	}
+}
+
+void Table::evict_from_cache(Timestamp partition_key)
+{
+	auto it = m_chunk_cache.find(partition_key);
+	m_chunk_cache_usage_list.erase(it->second.second);
+	finalise_chunk(std::move(it->second.first));
+	m_chunk_cache.erase(it);
+}
+
 
 void Table::finalise_chunk(std::shared_ptr<Chunk> chunk)
 {
@@ -151,12 +178,10 @@ void Table::flush_chunks()
 	m_chunks_to_save.clear(); // Clear after saving
 }
 
-void Table::persist_all()
+void Table::finalise_all()
 {
-	for (auto [_, chunk] : m_chunk_cache)
+	for (auto [_, pair] : m_chunk_cache)
 	{
-		finalise_chunk(std::move(chunk));
+		finalise_chunk(std::move(pair.first));
 	}
-	// TO REMOCE: Testing loading
-	m_chunk_cache.clear();
 }

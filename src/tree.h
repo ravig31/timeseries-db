@@ -17,16 +17,19 @@ class ChunkTreeNode
 	std::vector<Timestamp> keys;
 	// Each value is either another node (for internal nodes) or chunk (for leaves)
 	std::vector<std::variant<std::unique_ptr<ChunkTreeNode>, std::shared_ptr<ChunkFile>>> children;
+	// Next node in the sequence
+	ChunkTreeNode* next_node;
 
 	ChunkTreeNode(const bool leaf = false, const size_t node_capacity = Config::MAX_NODE_SIZE)
 		: m_node_capacity(node_capacity)
 		, m_is_leaf(leaf)
 	{
 		keys.reserve(node_capacity);
-		keys.reserve(node_capacity + 1);
+		children.reserve(node_capacity + 1);
+		next_node = nullptr;
 	}
 
-	bool is_full() const { return keys.size() == m_node_capacity; }
+	bool is_full() const { return children.size() == m_node_capacity; }
 	bool is_leaf() const { return m_is_leaf; }
 
   private:

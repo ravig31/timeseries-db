@@ -13,4 +13,5 @@
 - add check to avoid duplicate chunk keys in b-tree
 - test with large query/insert with large data set
 - querying of chunk files in paralell
+- ad
 - test and compare with SQL

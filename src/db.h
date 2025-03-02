@@ -21,7 +21,7 @@ class DataBase
 	std::vector<DataPoint> query(const std::string& table_name, const Query& query);
 	void create_table(const std::string& name, Table::Config&);
 	void insert(const std::string& table_name, const DataPoint& point);
-	Table* get_table(const std::string& table_name) { return m_tables[table_name].get(); }
+	void insert(const std::string& table_name, const std::vector<DataPoint>& points);
 
   private:
 

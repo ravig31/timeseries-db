@@ -10,12 +10,15 @@
 #include <memory>
 #include <utility>
 #include <vector>
+#include <future>
+#include <thread_pool/thread_pool.h>
 
-std::vector<DataPoint> Table::query(const Query& q)
-{
-	// consider using weak_ptrs here
+
+std::vector<DataPoint> Table::query(const Query& q) {
 	auto chunk_files = m_chunk_tree.range_query(q.m_time_range);
 	std::vector<std::shared_ptr<Chunk>> chunks{};
+	std::vector<std::future<Chunk>> chunk_futures{};
+	dp::thread_pool pool(4);
 
 	for (const auto& file : chunk_files)
 	{
@@ -42,6 +45,37 @@ std::vector<DataPoint> Table::query(const Query& q)
 	auto results = gather_data_from_chunks(chunks, q.m_time_range);
 	return results;
 }
+
+// std::vector<DataPoint> Table::query(const Query& q)
+// {
+// 	auto chunk_files = m_chunk_tree.range_query(q.m_time_range);
+// 	std::vector<std::shared_ptr<Chunk>> chunks{};
+
+// 	for (const auto& file : chunk_files)
+// 	{
+// 		Timestamp key = file->get_metadata().chunk_range.end_ts;
+// 		auto chunk = get_chunk_from_cache(key);
+
+// 		if (chunk != nullptr)
+// 		{
+// 			chunks.push_back(chunk);
+// 		}
+// 		else
+// 		{
+// 			// Add load datapoints in parallell
+// 			auto chunk = file->load();
+// 			if (chunk != nullptr)
+// 			{
+// 				auto shared_chunk = std::shared_ptr<Chunk>(chunk.release());
+// 				put_chunk_in_cache(key, std::move(chunk));
+// 				chunks.push_back(shared_chunk);
+// 			}
+// 		}
+// 	}
+// 	// Consider using weak_ptrs
+// 	auto results = gather_data_from_chunks(chunks, q.m_time_range);
+// 	return results;
+// }
 
 void Table::insert(const DataPoint& point)
 {
@@ -187,4 +221,6 @@ void Table::finalise_all()
 	{
 		finalise_chunk(std::move(pair.first));
 	}
+	// TO REMOVE
+	// m_chunk_cache.clear();
 }

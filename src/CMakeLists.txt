@@ -1,15 +1,14 @@
-add_library(libs
+add_executable(${PROJECT_NAME}
+    main.cpp
     table.cpp
     chunk.cpp
     tree.cpp
     db.cpp
 )
 
-add_executable(${PROJECT_NAME} main.cpp)
+target_link_libraries(${PROJECT_NAME} PRIVATE dp::thread-pool)
 
-target_link_libraries(${PROJECT_NAME} libs)
-
-target_include_directories(libs
+target_include_directories(${PROJECT_NAME}
     PUBLIC
     "${PROJECT_SOURCE_DIR}/src/include" 
 )

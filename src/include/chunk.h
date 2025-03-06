@@ -6,8 +6,6 @@
 
 #include <vector>
 
-struct DataPoint;
-
 
 class Chunk
 {

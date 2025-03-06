@@ -1,5 +1,5 @@
-#include "db.h"
 #include "datapoint.h"
+#include "db.h"
 #include "query.h"
 #include <filesystem>
 #include <iostream>

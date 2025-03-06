@@ -9,12 +9,15 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# Update the submodules here
-include(cmake/UpdateSubmodules.cmake)
-
-# Enable testing for this project
-include(CTest)
-
 # Add subdirectories
 add_subdirectory(src)
-add_subdirectory(tests) # add the tests directory.
+add_subdirectory(external)
+
+option(BUILD_TESTS "Build tests" OFF)
+# Testing
+if (BUILD_TESTS)
+    include(CTest)
+    add_test(NAME tsdb_unit_tests COMMAND tsdb_tests)
+    add_subdirectory(tests) # add the tests directory.
+endif ()
+

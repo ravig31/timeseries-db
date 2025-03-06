@@ -1,7 +1,10 @@
 #include "table.h"
+#include "query.h"
+#include "chunkfile.h"
+#include "tree.h"
 #include "chunk.h"
-#include "datapoint.h"
-#include "utils.h"
+
+
 #include <cassert>
 #include <cstddef>
 #include <memory>

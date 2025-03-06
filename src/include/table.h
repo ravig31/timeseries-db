@@ -6,11 +6,12 @@
 #include <utility>
 #include <vector>
 
-#include "chunk.h"
-#include "datapoint.h"
-#include "query.h"
 #include "tree.h"
-#include "utils.h"
+
+class ChunkFile;
+class Query;
+class DataPoint;
+class Chunk;
 
 class Table
 {

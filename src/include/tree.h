@@ -1,14 +1,15 @@
 #pragma once
 
-#include "chunk.h"
 #include "config.h"
 #include "utils.h"
+#include "chunkfile.h"
 
 #include <cstddef>
 #include <memory>
 #include <string>
 #include <sys/types.h>
 #include <vector>
+
 
 class ChunkTreeNode
 {
@@ -63,11 +64,9 @@ class ChunkTree
 
 	// Querying
 	void gather_chunk_files_in_range(
-		const ChunkTreeNode* node,
 		const TimeRange& range,
 		std::vector<std::shared_ptr<ChunkFile>>& results
 	) const;
-	// ChunkFile* find_chunk_file(ChunkTreeNode* node, Timestamp timestamp) const;
 
 	// Insertion
 	void split(ChunkTreeNode* parent, size_t index);

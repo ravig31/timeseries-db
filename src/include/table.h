@@ -2,6 +2,7 @@
 #include <cstddef>
 #include <list>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <utility>
 #include <vector>
@@ -49,6 +50,7 @@ class Table
 	size_t m_row_count;
 	Config m_config;
 	Timestamp m_latest_point_ts;
+	std::mutex m_cache_mutex;
 
 	// Querying
 	ChunkTree m_chunk_tree;

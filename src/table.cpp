@@ -8,6 +8,7 @@
 #include <cassert>
 #include <cstddef>
 #include <memory>
+#include <mutex>
 #include <utility>
 #include <vector>
 #include <future>
@@ -16,40 +17,56 @@
 
 std::vector<DataPoint> Table::query(const Query& q) {
 	auto chunk_files = m_chunk_tree.range_query(q.m_time_range);
-	std::vector<std::shared_ptr<Chunk>> chunks{};
-	std::vector<std::future<Chunk>> chunk_futures{};
-	dp::thread_pool pool(4);
+	std::vector<std::shared_ptr<Chunk>> chunks;
+	std::vector<std::future<std::shared_ptr<Chunk>>> chunk_futures{};
+	chunks.reserve(chunk_files.size());
+	chunk_futures.reserve(chunk_files.size());
+	
 
+	dp::thread_pool pool(6);
 	for (const auto& file : chunk_files)
 	{
 		Timestamp key = file->get_metadata().chunk_range.end_ts;
 		auto chunk = get_chunk_from_cache(key);
 
-		if (chunk != nullptr)
+		if (chunk)
 		{
 			chunks.push_back(chunk);
 		}
 		else
 		{
-			// Add load datapoints in parallell
-			auto chunk = file->load();
-			if (chunk != nullptr)
-			{
-				auto shared_chunk = std::shared_ptr<Chunk>(chunk.release());
-				put_chunk_in_cache(key, std::move(chunk));
-				chunks.push_back(shared_chunk);
-			}
-		}
+			// Add load datapoints into thread pool;
+			auto task = [this, file, key](){
+				auto chunk = file->load();
+				if (chunk)
+				{
+					
+					std::shared_ptr<Chunk> shared_chunk(std::move(chunk));
+					put_chunk_in_cache(key, shared_chunk);
+					return shared_chunk;
+				}
+				return std::shared_ptr<Chunk>();
+			};
+			chunk_futures.push_back(pool.enqueue(task));
+		}	
 	}
 	// Consider using weak_ptrs
-	auto results = gather_data_from_chunks(chunks, q.m_time_range);
-	return results;
+    for (auto& future : chunk_futures) {
+        auto chunk = future.get();
+        if (chunk) {
+            chunks.push_back(chunk);
+        }
+    }
+
+    auto results = gather_data_from_chunks(chunks, q.m_time_range);
+    return results;
 }
 
 // std::vector<DataPoint> Table::query(const Query& q)
 // {
 // 	auto chunk_files = m_chunk_tree.range_query(q.m_time_range);
 // 	std::vector<std::shared_ptr<Chunk>> chunks{};
+// 	chunks.reserve(chunk_files.size());
 
 // 	for (const auto& file : chunk_files)
 // 	{
@@ -66,8 +83,8 @@ std::vector<DataPoint> Table::query(const Query& q) {
 // 			auto chunk = file->load();
 // 			if (chunk != nullptr)
 // 			{
-// 				auto shared_chunk = std::shared_ptr<Chunk>(chunk.release());
-// 				put_chunk_in_cache(key, std::move(chunk));
+// 				std::shared_ptr<Chunk> shared_chunk(std::move(chunk));
+// 				put_chunk_in_cache(key, shared_chunk);
 // 				chunks.push_back(shared_chunk);
 // 			}
 // 		}
@@ -85,6 +102,7 @@ void Table::insert(const DataPoint& point)
 	Timestamp partition_key = get_partition_key(point.ts);
 	auto chunk = get_chunk_from_cache(partition_key);
 
+	// Uses write behind cache
 	if (chunk != nullptr)
 	{
 		chunk->append(point);
@@ -116,6 +134,8 @@ std::vector<DataPoint> Table::gather_data_from_chunks(
 	return results;
 }
 
+
+
 Timestamp Table::get_partition_key(Timestamp timestamp)
 {
 	Timestamp current_chunk_start = timestamp - (timestamp % m_config.chunk_size_secs);
@@ -141,6 +161,7 @@ std::shared_ptr<Chunk> Table::create_chunk(Timestamp partition_key)
 
 std::shared_ptr<Chunk> Table::get_chunk_from_cache(Timestamp partition_key)
 {
+	std::lock_guard<std::mutex> lock(m_cache_mutex);
 	auto it = m_chunk_cache.find(partition_key);
 	if (it != m_chunk_cache.end())
 	{
@@ -154,6 +175,8 @@ std::shared_ptr<Chunk> Table::get_chunk_from_cache(Timestamp partition_key)
 
 void Table::put_chunk_in_cache(Timestamp partition_key, std::shared_ptr<Chunk> chunk)
 {
+	std::lock_guard<std::mutex> lock(m_cache_mutex);
+
 	auto it = m_chunk_cache.find(partition_key);
 	if (it != m_chunk_cache.end())
 	{

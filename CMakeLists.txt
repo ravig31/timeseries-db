@@ -21,3 +21,4 @@ if (BUILD_TESTS)
     add_subdirectory(tests) # add the tests directory.
 endif ()
 
+# Options

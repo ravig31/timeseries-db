@@ -41,12 +41,14 @@ int main()
 
 	std::chrono::system_clock::time_point anchor =
 		std::chrono::system_clock::from_time_t(1740618000);
-	size_t num_test_points = 512; // Number of data points
+	size_t num_test_points = 1000000; // Number of data points
 	auto test_data =
-		generate_test_data_fixed_intervals(num_test_points, anchor, std::chrono::minutes(15));
-
+		generate_test_data_fixed_intervals(
+			num_test_points, 
+			anchor, 
+			std::chrono::minutes(5));
 	db.insert("test_table", test_data);
-
+\
 	// Add functionality to db later
 
 
@@ -54,7 +56,7 @@ int main()
 
 	// Query
 	auto now_int = std::chrono::system_clock::to_time_t(anchor);
-	TimeRange q_range = TimeRange{ now_int, now_int + (7200*6) };
+	TimeRange q_range = TimeRange{ now_int, now_int + (7200*128) };
 	Query q = { q_range };
 	auto start = std::chrono::high_resolution_clock::now(); // Start timer
 

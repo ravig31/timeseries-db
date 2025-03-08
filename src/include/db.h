@@ -21,16 +21,16 @@ class DataBase
 	std::vector<DataPoint> query(const std::string& table_name, const Query& query);
 	void create_table(const std::string& name, Table::Config&);
 	void insert(const std::string& table_name, const std::vector<DataPoint>& points);
-
-  private:
-
-
+	void insert_from_csv(const std::string &table_name, const std::string& file_path);
+	
+	private:
 	std::string m_name;
 	std::string m_dbpath;
 	std::unordered_map<std::string, std::unique_ptr<Table>> m_tables;
-
+	
 	std::string create_table_path(const std::string& table_name)
 	{
 		return m_dbpath + '/' + table_name;
 	}
+	std::vector<DataPoint> load_data_from_csv(const std::string& filename);
 };

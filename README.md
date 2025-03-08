@@ -1,17 +1,45 @@
-# timeseries-db
+# TimeSeries-DB
 
-# TODO
+A high-performance time series database optimized for fast insertion and querying of time-ordered data.
 
-- query functions x
-- look into b+tree x
-- querying of chunk files in paralell x
-- background thread to flush 
+## Features
 
+- **Fast Performance**: Optimised for rapid time series data operations
+- **Time-Based Chunking**: Efficient storage organisation for time-ordered data access patterns
+- **B+Tree Indexing**: Balanced tree structure for optimised query performance
+- **C++20 Implementation**: Modern C++ capabilities for maximum efficiency
 
-- add check to avoid duplicate chunk keys in b-tree 
-- test with large query/insert with large data set 
-- test and compare with SQL
-- add more db apis 
-    - count 
-    - select
-- expand datapoint to be able to hold different cols or sensors
+### Building from Source
+
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/timeseries-db.git
+cd timeseries-db
+
+# Configure the build
+cmake -S . -B build/
+
+# Build the project using multiple threads for faster compilation
+cmake --build build -j$(nproc)
+```
+
+### Running
+
+Currently, the project provides benchmarking functionality in `main.cpp` to evaluate insertion and query performance.
+
+```bash
+# Execute the benchmark
+./build/timeseries_db
+```
+
+## Performance
+
+Benchmark results vs Postgres
+
+## Roadmap
+
+- [ ] Historical data insertion API
+- [ ] Comprehensive test suite
+- [ ] Command-line interface
+- [ ] Multi-column/multi-sensor data point support
+- [ ] Data compression

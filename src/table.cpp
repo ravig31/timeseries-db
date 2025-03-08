@@ -66,83 +66,18 @@ std::vector<DataPoint> Table::query(const Query& q)
 	return results;
 }
 
-// std::vector<DataPoint> Table::query(const Query& q)
-// {
-// 	auto chunk_files = m_chunk_tree.range_query(q.m_time_range);
-// 	std::vector<std::shared_ptr<Chunk>> chunks{};
-// 	chunks.reserve(chunk_files.size());
-
-// 	for (const auto& file : chunk_files)
-// 	{
-// 		Timestamp key = file->get_metadata().chunk_range.end_ts;
-// 		auto chunk = get_chunk_from_cache(key);
-
-// 		if (chunk != nullptr)
-// 		{
-// 			chunks.push_back(chunk);
-// 		}
-// 		else
-// 		{
-// 			// Add load datapoints in parallell
-// 			auto chunk = file->load();
-// 			if (chunk != nullptr)
-// 			{
-// 				std::shared_ptr<Chunk> shared_chunk(std::move(chunk));
-// 				put_chunk_in_cache(key, shared_chunk);
-// 				chunks.push_back(shared_chunk);
-// 			}
-// 		}
-// 	}
-// 	// Consider using weak_ptrs
-// 	auto results = gather_data_from_chunks(chunks, q.m_time_range);
-// 	return results;
-// }
-
 void Table::insert(const std::vector<DataPoint>& points)
 {
-	dp::thread_pool pool(6);
-	for (const auto& point : points)
+	for (const auto& point: points)
 	{
-		assert(point.ts > m_latest_point_ts && "Does not support historical data implementation");
-		m_latest_point_ts = point.ts;
-
-		Timestamp partition_key = get_partition_key(point.ts);
-		auto chunk = get_chunk_from_cache(partition_key);
-
-		// Uses write behind cache
-		if (chunk != nullptr)
-		{
-			chunk->append(point);
-		}
-		else
-		{
-			auto new_chunk = create_chunk(partition_key);
-			new_chunk->append(point);
-			// LRU
-			put_chunk_in_cache(partition_key, std::move(new_chunk));
-			for (auto& [chunk_file_weak, chunk] : m_chunks_to_save)
-			{
-				pool.enqueue_detach([this, chunk_file_weak, chunk](){
-					finalise_single(chunk_file_weak, chunk);
-				});
-			}
-			m_chunks_to_save.clear(); 
-		}
-		m_row_count++;
+		insert_single(point);
+		if (m_chunks_to_save.size() == m_config.max_chunks_to_save)
+			flush_chunks();
 	}
-	
-	// Flush remaining
+	// Perist remaining from cache
 	finalise_all();
 	flush_chunks();
 }
-
-// void Table::insert(const std::vector<DataPoint>& points)
-// {
-// 	for (const auto& point: points)
-// 	{
-// 		insert_single(point);
-// 	}
-// }
 
 void Table::insert_single(const DataPoint& point)
 {

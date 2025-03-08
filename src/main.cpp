@@ -1,10 +1,13 @@
-#include <chrono>
+#include <cassert>
 #include <cstddef>
+#include <chrono>
 #include <iostream>
 #include <random>
 
 #include "config.h"
 #include "db.h"
+#include "Stopwatch.hpp"
+
 
 std::vector<DataPoint> generate_test_data_fixed_intervals(
 	size_t num_points,
@@ -30,7 +33,8 @@ std::vector<DataPoint> generate_test_data_fixed_intervals(
 
 int main()
 {
-	DataBase db{ "db1", "../tmp/tsdb" };
+	// Create DB & Table
+	DataBase db{ "db1", "tmp/tsdb" };
 	Table::Config config{ Config::CHUNK_INTERVAL_SECS,
 							Config::MAX_CHUNK_SIZE,
 						  Config::CHUNK_CACHE_SIZE,
@@ -39,33 +43,36 @@ int main()
 						  Config::MIN_DATA_RESOLUTION_SECS };
 	db.create_table("test_table", config);
 
+	stopwatch::Stopwatch watch;
+
+	// Create test data points
 	std::chrono::system_clock::time_point anchor =
 		std::chrono::system_clock::from_time_t(1740618000);
 	size_t num_test_points = 1000000; // Number of data points
+	int resolution_mins = 5;
 	auto test_data =
 		generate_test_data_fixed_intervals(
 			num_test_points, 
 			anchor, 
-			std::chrono::minutes(5));
+			std::chrono::minutes(resolution_mins));
+	
+
+	// Insert 		
+	watch.start();
 	db.insert("test_table", test_data);
-\
-	// Add functionality to db later
-
-
-
+	auto insert_time = watch.elapsed<stopwatch::mus>(); 
 
 	// Query
-	auto now_int = std::chrono::system_clock::to_time_t(anchor);
-	TimeRange q_range = TimeRange{ now_int, now_int + (7200*128) };
-	Query q = { q_range };
-	auto start = std::chrono::high_resolution_clock::now(); // Start timer
+	auto anchor_int = std::chrono::system_clock::to_time_t(anchor);
+	int q_duration = (3600*12);
+	Query q = { TimeRange{ anchor_int, anchor_int + q_duration } };
 
+	watch.start();
 	auto res = db.query("test_table", q);
-
-	auto end = std::chrono::high_resolution_clock::now(); // End timer
-	auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-
-	std::cout << "Query Time: " << duration.count() << " us" << "\n";
+	auto query_time = watch.elapsed<stopwatch::mus>();
+	
+	std::cout << "Insert Time: " << static_cast<double>(insert_time) / 1000 << " ms" << "\n";
+	std::cout << "Query Time: " << static_cast<double>(query_time) / 1000 << " ms" << "\n";
 
 	// Validate that all data points are within q_range
 	for (const auto& p : res)
@@ -77,15 +84,9 @@ int main()
 		}
 	}
 
-	std::cout << "q_range: " << "(" << q.m_time_range.start_ts << "," << q.m_time_range.end_ts
-			  << ")" << "\n";
-	std::cout << "rows: " << res.size() << "\n";
-	// for (const auto& p : res)
-	// {
-	// 	std::cout << p.ts << ": " << p.value << "\n";
-	// }
 
-	// table->flush_chunks();
-	// ... (Your query logic)
+	std::cout << "data_within_range: " << "true" << "\n";
+	std::cout << "rows: " << res.size() << "\n";
+	std::cout << "rows expected: " << q_duration / (resolution_mins * 60) << "\n";
 	return 0;
 }

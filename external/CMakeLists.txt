@@ -19,3 +19,5 @@ FetchContent_Declare(
 )
 
 add_subdirectory(thread-pool)
+
+add_subdirectory(Stopwatch)

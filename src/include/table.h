@@ -39,18 +39,22 @@ class Table
 	size_t rows() { return m_row_count; }
 
 	std::vector<DataPoint> query(const Query& q);
-	void insert(const DataPoint& data);
-
+	void insert(const std::vector<DataPoint>& dps);
+	
 	void finalise_all();
 	void flush_chunks();
-
-  private:
+	
+	private:
 	std::string m_name;
 	std::string m_data_path;
 	size_t m_row_count;
 	Config m_config;
 	Timestamp m_latest_point_ts;
+	std::mutex m_flush_mutex;
 	std::mutex m_cache_mutex;
+	
+	// Insertion
+	void insert_single(const DataPoint& dp);
 
 	// Querying
 	ChunkTree m_chunk_tree;
@@ -75,5 +79,6 @@ class Table
 	void evict_from_cache(Timestamp partition_key);
 	
 	std::vector<std::pair<std::weak_ptr<ChunkFile>, std::shared_ptr<Chunk>>> m_chunks_to_save;
-	void finalise_chunk(std::shared_ptr<Chunk> chunk);
+	void finalise_single(std::shared_ptr<Chunk> chunk);
+	void finalise_single(const std::weak_ptr<ChunkFile> chunk_file, const std::shared_ptr<Chunk> chunk);
 };

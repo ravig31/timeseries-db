@@ -20,7 +20,6 @@ class DataBase
 	// Need a way to batch insert points and after batch insertion make sure all  
 	std::vector<DataPoint> query(const std::string& table_name, const Query& query);
 	void create_table(const std::string& name, Table::Config&);
-	void insert(const std::string& table_name, const DataPoint& point);
 	void insert(const std::string& table_name, const std::vector<DataPoint>& points);
 
   private:

@@ -1,3 +1,4 @@
+#include "Stopwatch.hpp"
 #include "datapoint.h"
 #include "db.h"
 #include "query.h"
@@ -14,28 +15,19 @@ void DataBase::create_table(const std::string& name, Table::Config& options)
 	m_tables[name] = std::make_unique<Table>(name, table_path, options);
 }
 
-void DataBase::insert(const std::string& table_name, const DataPoint& point)
-{
-	if (auto table = m_tables.find(table_name); table != m_tables.end())
-	{
-		table->second->insert(point);
-	}
-	else
-	{
-		std::cerr << "Table not found: " << table_name << '\n';
-	}
-}
 
 void DataBase::insert(const std::string& table_name, const std::vector<DataPoint>& points)
 {
 	if (auto table = m_tables.find(table_name); table != m_tables.end())
 	{
-		for (const auto& point : points)
-		{
-			table->second->insert(point);
-		}
-		table->second->finalise_all();
-		table->second->flush_chunks();
+		stopwatch::Stopwatch watch;
+		watch.start();
+		table->second->insert(points);
+		// table->second->finalise_all();
+		std::cout << "Insert (MEM) Time: "<< watch.elapsed() << " ms" << "\n";
+		// watch.start();
+		// table->second->flush_chunks();
+		// std::cout << "Flush Time: "<< watch.elapsed() << " ms" << "\n";
 	}
 	else
 	{

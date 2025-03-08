@@ -6,7 +6,7 @@ add_executable(${PROJECT_NAME}
     db.cpp
 )
 
-target_link_libraries(${PROJECT_NAME} PRIVATE dp::thread-pool)
+target_link_libraries(${PROJECT_NAME} PRIVATE dp::thread-pool Stopwatch)
 
 target_include_directories(${PROJECT_NAME}
     PUBLIC

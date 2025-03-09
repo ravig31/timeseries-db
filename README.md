@@ -8,7 +8,7 @@ A high-performance time series database optimised for fast insertion and queryin
 - **Time-Based Chunking**: Efficient storage organisation for time-ordered data access patterns
 - **B+Tree Indexing**: Balanced tree structure for optimised query performance
 - **Multi-threaded**: Asynchronus I/O operations for reduced query latency
-- **C++20 Implementation**: Modern C++ capabilities for maximum efficiency
+- **CLI**: Command line interface for interacting with database
 
 ### Building from Source
 
@@ -17,20 +17,18 @@ A high-performance time series database optimised for fast insertion and queryin
 git clone https://github.com/yourusername/timeseries-db.git
 cd timeseries-db
 
-# Configure the build
+# Build & compile
 cmake -S . -B build/
-
-# Build the project using multiple threads for faster compilation
-cmake --build build -j$(nproc)
+cmake --build build 
 ```
 
 ### Running
 
-Currently, the project provides benchmarking functionality in `main.cpp` to evaluate insertion and query performance.
+Run command line interface.
 
 ```bash
 # Execute the benchmark
-./build/timeseries_db
+./build/src/tsdb
 ```
 
 ## Performance

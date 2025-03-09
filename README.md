@@ -35,7 +35,9 @@ Currently, the project provides benchmarking functionality in `main.cpp` to eval
 
 ## Performance
 
-Benchmark results vs Postgres
+Running on my local machine throughput is around 1.5million rows/s. These are numbers are very preliminary, feel free to benchmark yourself.
+
+![alt text](image.png)
 
 ## Roadmap
 

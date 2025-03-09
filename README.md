@@ -7,6 +7,7 @@ A high-performance time series database optimized for fast insertion and queryin
 - **Fast Performance**: Optimised for rapid time series data operations
 - **Time-Based Chunking**: Efficient storage organisation for time-ordered data access patterns
 - **B+Tree Indexing**: Balanced tree structure for optimised query performance
+- **Multi-threaded**: Asynchronus I/O operations for reduced query latency
 - **C++20 Implementation**: Modern C++ capabilities for maximum efficiency
 
 ### Building from Source

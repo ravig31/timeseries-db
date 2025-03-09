@@ -77,7 +77,6 @@ Average Rows/s: 1.5361e+06
 
 ## Roadmap
 
-- [ ] Historical data insertion API
 - [ ] Comprehensive test suite
 - [ ] Command-line interface
 - [ ] Multi-column/multi-sensor data point support

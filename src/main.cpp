@@ -6,6 +6,7 @@
 #include <random>
 
 #include "Stopwatch.hpp"
+#include "cli.h"
 #include "config.h"
 #include "db.h"
 
@@ -29,6 +30,20 @@ std::vector<DataPoint> generate_test_data(
 		data.push_back({ ts, value });
 	}
 	return data;
+}
+
+long get_peak_rss() {
+    std::ifstream status_file("/proc/self/status");
+    std::string line;
+    long peak_rss = 0;
+
+	std::string ignore;
+	std::ifstream ifs("/proc/self/stat", std::ios_base::in);
+	ifs >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore
+			>> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore >> ignore
+			>> ignore >> ignore >> ignore >> peak_rss;
+			
+    return peak_rss;
 }
 
 void save_data_to_csv(const std::vector<DataPoint>& data, const std::string& filename)
@@ -66,7 +81,11 @@ int main()
 						  Config::FLUSH_INTERVAL_SECS,
 						  data_res_secs};
 
-	db.create_table("test_table", config);
+	CLI cli(db);
+
+	cli.run();
+
+		
 
 
 	// // Create test data points
@@ -77,35 +96,37 @@ int main()
 	// save_data_to_csv(test_data, "assets/sample.csv");
 
 	
-	// Insert
-	watch.start();
-	db.insert_from_csv("test_table", "assets/sample.csv");
-	auto insert_time = watch.elapsed<stopwatch::mus>();
+	// // Insert
+	// watch.start();
+	// db.insert_from_csv("test_table", "assets/sample.csv");
+	// auto insert_time = watch.elapsed<stopwatch::mus>();
 
-	// Query
-	auto anchor_int = std::chrono::system_clock::to_time_t(anchor);
-	int points_to_query = (10000);
-	int q_duration = (points_to_query * (data_res_secs));
-	Query q = { TimeRange{ anchor_int, anchor_int + q_duration } };
+	// // Query
+	// auto anchor_int = std::chrono::system_clock::to_time_t(anchor);
+	// int points_to_query = (10000);
+	// int q_duration = (points_to_query * (data_res_secs));
+	// Query q = { TimeRange{ anchor_int, anchor_int + q_duration } };
 
-	watch.start();
-	auto res = db.query("test_table", q);
-	auto query_time = watch.elapsed<stopwatch::mus>();
+	// watch.start();
+	// auto res = db.query("test_table", q);
+	// auto query_time = watch.elapsed<stopwatch::mus>();
 
-	// Output operation times
-	std::cout << "Insert Time: " << static_cast<double>(insert_time) / 1000 << " ms" << "\n";
-	std::cout << "Query Time: " << static_cast<double>(query_time) / 1000 << " ms" << "\n";
+	// // Output operation times
+	// std::cout << "Insert Time: " << static_cast<double>(insert_time) / 1000 << " ms" << "\n";
+	// std::cout << "Query Time: " << static_cast<double>(query_time) / 1000 << " ms" << "\n";
 
-	// Validate that all data points are within q_range
-	for (const auto& p : res)
-	{
-		if (!(p.ts >= q.m_time_range.start_ts && p.ts <= q.m_time_range.end_ts))
-		{
-			std::cerr << "Error: Data point " << p.ts << " is outside the query range."
-					  << std::endl;
-		}
-	}
-	std::cout << "Rows: " << res.size() << "\n";
-	std::cout << "Rows expected: " << points_to_query << "\n";
+	// // Validate that all data points are within q_range
+	// for (const auto& p : res)
+	// {
+	// 	if (!(p.ts >= q.m_time_range.start_ts && p.ts <= q.m_time_range.end_ts))
+	// 	{
+	// 		std::cerr << "Error: Data point " << p.ts << " is outside the query range."
+	// 				  << std::endl;
+	// 	}
+	// }
+	// std::cout << "Rows: " << res.size() << "\n";
+	// std::cout << "Rows expected: " << points_to_query << "\n";
+	// std::cout << "Peak memory: " << get_peak_rss() << " KB" << std::endl;
+
 	return 0;
 }

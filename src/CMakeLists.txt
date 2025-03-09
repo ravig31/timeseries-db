@@ -4,6 +4,7 @@ add_executable(${PROJECT_NAME}
     chunk.cpp
     tree.cpp
     db.cpp
+    cli.cpp
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE dp::thread-pool Stopwatch)

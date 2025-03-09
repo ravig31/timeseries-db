@@ -6,6 +6,7 @@
 #include <iostream>
 #include <memory>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -16,6 +17,13 @@ void DataBase::create_table(const std::string& name, Table::Config& options)
 	m_tables[name] = std::make_unique<Table>(name, table_path, options);
 }
 
+const std::vector<std::string> DataBase::get_table_names() const {
+    std::vector<std::string> names;
+    for (const auto& [name, table] : m_tables) {
+        names.push_back(name);
+    }
+    return names;
+}
 
 void DataBase::insert(const std::string& table_name, const std::vector<DataPoint>& points)
 {
@@ -25,7 +33,7 @@ void DataBase::insert(const std::string& table_name, const std::vector<DataPoint
 	}
 	else
 	{
-		std::cerr << "Table not found: " << table_name << '\n';
+		throw std::runtime_error( "Table not found");
 	}
 }
 
@@ -89,7 +97,6 @@ std::vector<DataPoint>  DataBase::load_data_from_csv(const std::string& file_pat
 	}
 
 	infile.close();
-	std::cout << data.size() << "\n";
 	std::cout << "Data loaded from " << file_path << std::endl;
 	return data;
 }

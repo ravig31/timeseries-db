@@ -1,6 +1,7 @@
 #pragma once
 #include <filesystem>
 #include <memory>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
@@ -17,11 +18,14 @@ class DataBase
 	{
 		std::filesystem::create_directories(filepath);
 	}
-	// Need a way to batch insert points and after batch insertion make sure all  
-	std::vector<DataPoint> query(const std::string& table_name, const Query& query);
 	void create_table(const std::string& name, Table::Config&);
+	const std::vector<std::string> get_table_names() const;
+	const Table* get_table(const std::string& table_name) const { return m_tables.at(table_name).get(); }
+
+	std::vector<DataPoint> query(const std::string& table_name, const Query& query);
 	void insert(const std::string& table_name, const std::vector<DataPoint>& points);
 	void insert_from_csv(const std::string &table_name, const std::string& file_path);
+	std::vector<DataPoint> load_data_from_csv(const std::string& filename);
 	
 	private:
 	std::string m_name;
@@ -32,5 +36,4 @@ class DataBase
 	{
 		return m_dbpath + '/' + table_name;
 	}
-	std::vector<DataPoint> load_data_from_csv(const std::string& filename);
 };

@@ -28,18 +28,18 @@ class Table
 		const size_t chunk_capacity;
 
 		Config(
-			TimeDelta chunk_size,
-			size_t cache_size,
-			size_t max_save,
-			TimeDelta flush_interval,
-			TimeDelta min_resolution
+			TimeDelta chunk_interval_secs,
+			size_t cache_size_chunks,
+			size_t max_save_chunks,
+			TimeDelta flush_interval_secs,
+			TimeDelta min_resolution_secs
 		)
-			: chunk_size_secs(chunk_size)
-			, chunk_cache_size(cache_size)
-			, max_chunks_to_save(max_save)
-			, flush_interval_secs(flush_interval)
-			, min_resolution_secs(min_resolution)
-			, chunk_capacity(static_cast<size_t>(chunk_size / min_resolution))
+			: chunk_size_secs(chunk_interval_secs)
+			, chunk_cache_size(cache_size_chunks)
+			, max_chunks_to_save(max_save_chunks)
+			, flush_interval_secs(flush_interval_secs) // TODO: Not implemented (background thread)
+			, min_resolution_secs(min_resolution_secs)
+			, chunk_capacity(static_cast<size_t>(chunk_interval_secs / min_resolution_secs))
 		{
 		}
 	};
@@ -53,7 +53,7 @@ class Table
 	{
 	}
 
-	size_t rows() { return m_row_count; }
+	const size_t rows() const { return m_row_count; }
 
 	std::vector<DataPoint> query(const Query& q);
 	void insert(const std::vector<DataPoint>& dps);

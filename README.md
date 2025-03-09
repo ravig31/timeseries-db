@@ -1,6 +1,6 @@
 # TimeSeries-DB
 
-A high-performance time series database optimized for fast insertion and querying of time-ordered data.
+A high-performance time series database optimised for fast insertion and querying of time-ordered data. Built following the TimescaleDB architecture
 
 ## Features
 

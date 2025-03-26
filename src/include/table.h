@@ -17,6 +17,17 @@ class Chunk;
 class Table
 {
   public:
+
+	struct Metrics
+	{
+		double m_cache_misses;
+		double m_cache_hits;
+	
+		const double get_cache_miss_percentage() const 
+		{
+			return (m_cache_misses / (m_cache_hits + m_cache_misses)) * 100;
+		}
+	};
 	class Config
 	{
 		public:
@@ -49,6 +60,7 @@ class Table
 		, m_data_path(data_path)
 		, m_row_count(0)
 		, m_config(config)
+		, m_metrics()
 		, m_chunk_tree(ChunkTree(data_path, config.chunk_size_secs))
 	{
 	}
@@ -60,6 +72,8 @@ class Table
 
 	void finalise_all();
 	void flush_chunks();
+	
+	const Metrics& get_metrics() const {return m_metrics; }
 
   private:
 	std::string m_name;
@@ -69,6 +83,7 @@ class Table
 	Timestamp m_latest_point_ts;
 	std::mutex m_flush_mutex;
 	std::mutex m_cache_mutex;
+	Metrics m_metrics;
 
 	// Insertion
 	void insert_single(const DataPoint& dp);

@@ -33,9 +33,11 @@ std::vector<DataPoint> Table::query(const Query& q)
 		if (chunk)
 		{
 			chunks.push_back(chunk);
+			m_metrics.m_cache_hits++;
 		}
 		else
 		{
+			m_metrics.m_cache_misses++;
 			// Add load datapoints into thread pool;
 			auto task = [this, file, key]()
 			{

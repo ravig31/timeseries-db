@@ -14,6 +14,6 @@ target_include_directories(${PROJECT_NAME}
     "${PROJECT_SOURCE_DIR}/src/include" 
 )
 
-target_compile_options(${PROJECT_NAME} PRIVATE
-  -fexperimental-library
-)
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    target_compile_options(your_target PRIVATE -fexperimental-library)
+endif()

@@ -13,7 +13,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 add_subdirectory(src)
 add_subdirectory(external)
 
-option(BUILD_BENCHMARK "Build benchmark executable" OFF)
+option(BUILD_BENCHMARK "Build benchmark executable" ON)
 if (BUILD_BENCHMARK)
     add_subdirectory(assets)
 endif()

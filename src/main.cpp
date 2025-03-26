@@ -6,7 +6,7 @@
 
 int main()
 {
-	// Create DB & Table
+	// Create DB
 	DataBase db{ "db1", "tmp/tsdb" };
 
 	CLI cli(db);

@@ -58,11 +58,11 @@ int main()
 	stopwatch::Stopwatch watch;
 	TimeDelta data_res_secs = 300;
 	Timestamp anchor = 1740618000;
-	size_t num_test_points = 10000; // Number of data points
+	// size_t num_test_points = 10000; // Number of data points
 	// Create DB & Table
 	DataBase db{ "db1", "tmp/tsdb" };
 	Table::Config config{ 3600,
-						  1000,
+						  2048,
 						  12,
 						  30, //
 						  data_res_secs };
@@ -77,7 +77,7 @@ int main()
 	// Insert
 	std::cout << "Inserting data..." << "\n";
 	watch.start();
-	db.insert_from_csv("benchmark", "assets/sample.csv");
+	db.insert_from_csv("benchmark", "assets/sample.csv"); // 1 million row data set
 	auto insert_time = watch.elapsed<stopwatch::mus>();
 	std::cout << "Insert Time: " << static_cast<double>(insert_time) / 1000 << " ms" << "\n\n";
 
@@ -117,11 +117,14 @@ int main()
 
 	double rows_per_us = 1 / query_us_per_row;
 	double rows_per_s = rows_per_us * 1000 * 1000; 
-
+	double cache_miss_percentage = db.get_table("benchmark")->get_metrics().get_cache_miss_percentage(); 
+	
 	// Output operation times
 	std::cout << "Queries Ran: " << intervals.size() << "\n";
 	std::cout << "Average Query Time: " << avg_query_time_ms << " ms" << "\n";
 	std::cout << "Rows Queried: " << total_rows_queried << "\n";
 	std::cout << "Average Rows/s: " << rows_per_s << "\n";
+	std::cout << "Cache Miss %: " << cache_miss_percentage << "\n";
+
 	return 0;
 }

@@ -31,9 +31,9 @@ Run command line interface.
 ./build/src/tsdb
 ```
 
-## Performance
+## Load Performance
 
-Ran on M1 Pro 16GB, troughput of around 1.5million rows/s with deliberate worst case cache conditions. Note these are numbers are very preliminary numbers, many areas to tweak to improve performance.
+Ran on M1 Pro 16GB, troughput of around 1.5million rows/s with deliberate worst case cache conditions. Benchmark was to mainly profile Btree query performance and concurrent I/O of persisted database files.
 
 ```bash
 -> % /usr/bin/time -l ./build/assets/benchmarking/benchmark

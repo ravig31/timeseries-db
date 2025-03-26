@@ -62,7 +62,7 @@ int main()
 	// Create DB & Table
 	DataBase db{ "db1", "tmp/tsdb" };
 	Table::Config config{ 3600,
-						  2048,
+						  4096,
 						  12,
 						  30, //
 						  data_res_secs };

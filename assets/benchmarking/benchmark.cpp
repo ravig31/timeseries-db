@@ -124,7 +124,7 @@ int main()
 	std::cout << "Average Query Time: " << avg_query_time_ms << " ms" << "\n";
 	std::cout << "Rows Queried: " << total_rows_queried << "\n";
 	std::cout << "Average Rows/s: " << rows_per_s << "\n";
-	std::cout << "Cache Miss %: " << cache_miss_percentage << "\n";
+	std::cout << "DB_Cache Miss %: " << cache_miss_percentage << "\n";
 
 	return 0;
 }

@@ -1,14 +1,16 @@
 #pragma once
 
+#include "utils.h"
+
+#include "chunkfilemetadata.h"
+#include <memory>
 #include <string>
 #include <vector>
 
-#include "utils.h"
-#include "chunkfilemetadata.h"
-
 class Chunk;
 
-class ChunkFile{
+class ChunkFile
+{
   public:
 	ChunkFile(
 		const std::string& base_path,

@@ -5,7 +5,7 @@
 #include "chunkfilemetadata.h"
 
 #include <vector>
-
+#include <stdexcept>
 
 class Chunk
 {

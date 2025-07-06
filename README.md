@@ -1,13 +1,7 @@
 
 A 'high-performance' time series database optimised for fast insertion and querying of time-ordered data. Built following the TimescaleDB architecture
 
-## Features
 
-- **Fast Performance**: Optimised for rapid time series data operations
-- **Time-Based Chunking**: Efficient storage organisation for time-ordered data access patterns
-- **B+Tree Indexing**: Balanced tree structure for optimised query performance
-- **Multi-threaded**: Asynchronus I/O operations for reduced query latency
-- **CLI**: Command line interface for interacting with database
 
 ### Building from Source
 

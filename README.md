@@ -1,6 +1,5 @@
-# TimeSeries-DB
 
-A high-performance time series database optimised for fast insertion and querying of time-ordered data. Built following the TimescaleDB architecture
+A 'high-performance' time series database optimised for fast insertion and querying of time-ordered data. Built following the TimescaleDB architecture
 
 ## Features
 
@@ -79,7 +78,7 @@ Under these worst conditions peak memory usage was around 1.29GB for this partic
 ## Roadmap
 
 - [ ] Comprehensive test suite
-- [ ] Command-line interface
-- [ ] Backgrounf thread to flush asynchronously
+- [x] Command-line interface
+- [ ] Background thread to flush asynchronously
 - [ ] Multi-column/multi-sensor data point support
 - [ ] Data compression

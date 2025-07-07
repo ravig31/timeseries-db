@@ -150,8 +150,8 @@ void InsertFromCSVCommand::execute(CLIState& state, const std::vector<std::strin
 	}
 	catch (const std::exception& e)
 	{
-        std::stringstream error_message;
-        error_message << "Failed to insert data from CSV file '" << filename << "': " << e.what();
+		std::stringstream error_message;
+		error_message << "Failed to insert data from CSV file '" << filename << "': " << e.what();
 		throw std::runtime_error(error_message.str());
 	}
 }
@@ -168,44 +168,45 @@ void QueryCommand::execute(CLIState& state, const std::vector<std::string>& args
 	time_t start_ts = parse_timestamp(args[2]);
 	time_t end_ts = parse_timestamp(args[3]);
 
-    if (start_ts > end_ts)
-    {
-        std::cout << "Error: Invalid time range: [" << start_ts << "," << end_ts << "]"<< "\n";
-		return; 
-    }
+	if (start_ts > end_ts)
+	{
+		std::cout << "Error: Invalid time range: [" << start_ts << "," << end_ts << "]" << "\n";
+		return;
+	}
 
-    try {
-        Query q = { TimeRange{ start_ts, end_ts } };
+	try
+	{
+		Query q = { TimeRange{ start_ts, end_ts } };
 
-        auto& watch = state.get_stopwatch();
-        watch.start();
-        auto results = state.get_database().query(table_name, q);
-        auto query_time = watch.elapsed<stopwatch::mus>();
-    
-        std::cout << "Query executed in " << static_cast<double>(query_time) / 1000 << " ms\n";
-        // std::cout << "Retrieved " << results.size() << " rows...\n\n";
-    
-        // // Display results (limited to first 10 for readability)
-        // std::cout << "Timestamp | Value\n";
-        // std::cout << "---------------------\n";
-    
-        // size_t display_count = std::min(results.size(), size_t(10));
-        // for (size_t i = 0; i < display_count; ++i)
-        // {
-        //     std::cout << results[i].ts << " | " << results[i].value << "\n";
-        // }
-    
-        // if (results.size() > 10)
-        // {
-        //     std::cout << "... and " << (results.size() - 10) << " more rows.\n";
-        // }
-    } catch (const std::exception& e) {
-        std::stringstream error_message;
-        error_message << "Failed to query data: " << e.what();
-		throw std::runtime_error(error_message.str()); 
-    }
+		auto& watch = state.get_stopwatch();
+		watch.start();
+		auto results = state.get_database().query(table_name, q);
+		auto query_time = watch.elapsed<stopwatch::mus>();
 
-	
+		std::cout << "Query executed in " << static_cast<double>(query_time) / 1000 << " ms\n";
+		std::cout << "Retrieved " << results.size() << " rows...\n\n";
+
+		// Display results (limited to first 10 for readability)
+		std::cout << "Timestamp | Value\n";
+		std::cout << "---------------------\n";
+
+		size_t display_count = std::min(results.size(), size_t(10));
+		for (size_t i = 0; i < display_count; ++i)
+		{
+		    std::cout << results[i].ts << " | " << results[i].value << "\n";
+		}
+
+		if (results.size() > 10)
+		{
+		    std::cout << "... and " << (results.size() - 10) << " more rows.\n";
+		}
+	}
+	catch (const std::exception& e)
+	{
+		std::stringstream error_message;
+		error_message << "Failed to query data: " << e.what();
+		throw std::runtime_error(error_message.str());
+	}
 }
 
 CLI::CLI(DataBase& database)

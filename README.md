@@ -1,8 +1,6 @@
 
 A 'high-performance' time series database optimised for fast insertion and querying of time-ordered data. Built following the TimescaleDB architecture
 
-
-
 ### Building from Source
 
 ```bash
@@ -17,14 +15,12 @@ cmake --build build
 
 ### Running
 
-Run command line interface.
-
 ```bash
-# Execute the benchmark
+# Run command line interface.
 ./build/src/tsdb
 ```
 
-## Load Performance
+## Benchmark
 
 Ran on M1 Pro 16GB, troughput of around 1.5million rows/s with deliberate worst case cache conditions. Benchmark was to mainly profile Btree query performance and concurrent I/O of persisted database files.
 

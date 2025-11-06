@@ -4,10 +4,9 @@
 #include "cli.h"
 #include "db.h"
 
-int main()
-{
+int main() {
 	// Create DB
-	DataBase db{ "db1", "tmp/tsdb" };
+	DataBase db{"db1", "tmp/tsdb"};
 
 	CLI cli(db);
 

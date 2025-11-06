@@ -1,34 +1,7 @@
 # General
+BasedOnStyle: LLVM
 UseTab: Always
 IndentWidth: 4
 TabWidth: 4
 ColumnLimit: 100
 
-# Braces
-Cpp11BracedListStyle: false
-BreakBeforeBraces: Allman 
-BraceWrapping:
-  AfterFunction: true
-
-# Pointers & References
-PointerAlignment: Left
-ReferenceAlignment: Left
-
-# Constructors
-BreakConstructorInitializers: BeforeComma
-PackConstructorInitializers: Never
-ConstructorInitializerIndentWidth: 4
-
-# Function declarations/definitions
-BinPackParameters: false
-BinPackArguments: false
-ExperimentalAutoDetectBinPacking: false
-AllowAllParametersOfDeclarationOnNextLine: false
-AlwaysBreakAfterReturnType: None
-PenaltyReturnTypeOnItsOwnLine: 1000
-
-# Parameter alignment and closing parenthesis
-AlignAfterOpenBracket: BlockIndent
-ContinuationIndentWidth: 4
-AlignOperands: false
-AllowAllArgumentsOnNextLine: false

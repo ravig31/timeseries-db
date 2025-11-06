@@ -65,7 +65,7 @@ class Table
 	{
 	}
 
-	const size_t rows() const { return m_row_count; }
+	size_t rows() const { return m_row_count; }
 
 	std::vector<DataPoint> query(const Query& q);
 	void insert(const std::vector<DataPoint>& dps);
@@ -92,7 +92,9 @@ class Table
 	ChunkTree m_chunk_tree;
 	std::vector<DataPoint> gather_data_from_chunks(
 		const std::vector<std::shared_ptr<Chunk>>& chunks,
-		const TimeRange& query_range
+		const TimeRange& query_range,
+		bool sorted,
+		size_t limit
 	) const;
 
 	// Utils

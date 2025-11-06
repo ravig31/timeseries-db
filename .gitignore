@@ -18,3 +18,4 @@ cmake-build-*/
 
 # Data
 tmp/
+.DS_Store

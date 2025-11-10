@@ -105,8 +105,6 @@ void ChunkTree::insert_non_full(
 	std::shared_ptr<ChunkFile> chunk_file
 )
 {
-
-	// TODO: check time complexity of this
 	if (node->is_leaf())
 	{
 		assert(node != nullptr && "node should not be null in insert_non_full"); 
@@ -117,9 +115,8 @@ void ChunkTree::insert_non_full(
 			auto it = std::lower_bound(node->keys.begin(), node->keys.end(), range.end_ts);
 			index = std::distance(node->keys.begin(), it);
 		}
-		// Insert using the insert method for vectors.
 		node->keys.insert(node->keys.begin() + index, range.end_ts);
-		// Find the insertion point in children, which should align with keys.
+		
 		auto child_it = node->children.begin() + index;
 		node->children.insert(child_it, std::move(chunk_file));
 	}

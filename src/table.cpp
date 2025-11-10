@@ -74,7 +74,7 @@ void Table::insert_single(const DataPoint &point) {
 	Timestamp partition_key = get_partition_key(point.ts);
 	auto chunk = get_chunk_from_cache(partition_key);
 
-	// Uses write behind cache
+	// Uses write behind cache -- first written to cache
 	if (chunk != nullptr) {
 		chunk->append(point);
 	} else {

@@ -3,7 +3,7 @@
 #include "utils.h"
 
 struct DataPoint {
-  Timestamp ts;
+Timestamp ts;
   double value;
 
   TimeDelta encode_time_delta(Timestamp base_ts) const {

@@ -20,7 +20,7 @@ class ChunkTreeNode
 	// Each value is either another node (for internal nodes) or chunk (for leaves)
 	std::vector<std::variant<std::unique_ptr<ChunkTreeNode>, std::shared_ptr<ChunkFile>>> children;
 	// Next node in the sequence
-	ChunkTreeNode* next_node;
+	ChunkTreeNode* next_node; // B+ Tree functionality 
 
 	ChunkTreeNode(const bool leaf = false, const size_t node_capacity = Config::MAX_NODE_SIZE)
 		: m_node_capacity(node_capacity)
